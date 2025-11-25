@@ -5,8 +5,12 @@ name: Daily Github-Trending
 
 on:
   schedule:
-    - cron: "0 11 * * *"
+    - cron: "0 0 * * *"
   workflow_dispatch: # Manually running a workflow
+
+# 添加权限设置
+permissions:
+  contents: write
   
 jobs:
   build:
@@ -14,9 +18,10 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-    - uses: actions/checkout@v2
+    - name: Checkout repository
+      uses: actions/checkout@v4
     - name: Set up Python 3.10
-      uses: actions/setup-python@v2
+      uses: actions/setup-python@v4
       with:
         python-version: 3.10
 
@@ -36,7 +41,7 @@ jobs:
         fi
         echo "✅ 配置文件检查通过"
 
-    - name: Run crawler
+    - name: Run schedule
       env:
         FEISHU_WEBHOOK_URL: ${{ secrets.FEISHU_WEBHOOK_URL }}
         TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
