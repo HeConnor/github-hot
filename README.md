@@ -1,13 +1,16 @@
 # github-hot
+
+> copy from: [github-hot](https://github.com/shibing624/github-hot)
+
 Tracking the hot Github repos and update daily
 
-1. Automatically grab popular projects every day based on Github Actions [.github/workflows/schedule.yml](https://github.com/shibing624/github-hot/blob/main/.github/workflows/schedule.yml)
+1. Automatically grab popular projects every day based on Github Actions [.github/workflows/schedule.yml](.github/workflows/schedule.yml)
 2. Support project list output in markdown format, automatically synchronized to github
 3. Support custom sorting, select topk hot interest repos
 
 ## Usage
 ```bash
-git clone https://github.com/shibing624/github-hot.git
+git clone github-hot.git
 cd github-hot
 pip install -r requirements.txt
 python crawler.py
@@ -15,15 +18,7 @@ python crawler.py
 
 ### Result
 
-<img src="https://github.com/shibing624/github-hot/blob/main/docs/pic.png" width="860" />
-
-
-
-## Contact
-
-- Issue(建议)：[![GitHub issues](https://img.shields.io/github/issues/shibing624/github-hot.svg)](https://github.com/shibing624/github-hot/issues)
-- 邮件我：xuming: xuming624@qq.com
-- 微信我：加我*微信号：xuming624*, 进Python-NLP交流群，备注：*姓名-公司名-NLP*
+<img src="./docs/pic.png" width="860" />
 
 
 ## License

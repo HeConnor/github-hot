@@ -3,28 +3,11 @@
 @author:XuMing(xuming624@qq.com)
 @description: 
 """
-import datetime
-import os
-from codecs import open
 
-import pandas as pd
 import requests
 from pyquery import PyQuery
 
-
-def git_add_commit_push(date, filename):
-    cmd_git_add = 'git add {filename}'.format(filename=filename)
-    cmd_git_commit = 'git commit -m "{date}"'.format(date=date)
-    cmd_git_push = 'git push -u origin master'
-
-    os.system(cmd_git_add)
-    os.system(cmd_git_commit)
-    os.system(cmd_git_push)
-
-
-def create_markdown(date, filename):
-    with open(filename, 'w', encoding='utf-8') as f:
-        f.write("## " + date + " Github Trending\n")
+from storage import save_to_md, save_to_str
 
 
 def scrape(language, filename, topk=5):
@@ -55,47 +38,7 @@ def scrape(language, filename, topk=5):
         fork = int(fork.replace(',', ''))
         new_star = int(new_star.replace(',', ''))
         ds.append([title, url, description, star, fork, new_star])
-    save_to_md(ds, filename, language, topk)
-
-
-def save_to_md(ds, filename, language, topk=5):
-    df = pd.DataFrame(ds, columns=['title', 'url', 'description', 'star', 'fork', 'new_star'])
-    df.sort_values(by=['new_star', 'star', 'fork'], ascending=False, inplace=True)
-    df.reset_index(drop=True, inplace=True)
-    df = df.head(topk)
-    with open(filename, "a", "utf-8") as f:
-        f.write('\n### {language}\n'.format(language=language))
-
-        for i in range(len(df)):
-            title = df.iloc[i]['title']
-            url = df.iloc[i]['url']
-            description = df.iloc[i]['description']
-            star = df.iloc[i]['star']
-            fork = df.iloc[i]['fork']
-            new_star = df.iloc[i]['new_star']
-
-            out = "* [{title}]({url}): {description} ***Star:{stars} Fork:{fork} Today stars:{new_star}***\n".format(
-                title=title, url=url, description=description, stars=star, fork=fork, new_star=new_star)
-            f.write(out)
-
-
-def job():
-    today_str = datetime.datetime.now().strftime('%Y-%m-%d')
-    filename = 'markdowns/{date}.md'.format(date=today_str)
-
-    # create markdown file
-    create_markdown(today_str, filename)
-
-    # write markdown
-    scrape('', filename, topk=10)  # full_url = 'https://github.com/trending?since=daily'
-    scrape('python', filename)
-    scrape('java', filename)
-    scrape('javascript', filename)
-    scrape('go', filename)
-    print('save markdown file to {filename}'.format(filename=filename))
-
-    # git_add_commit_push(strdate, filename)
-
-
-if __name__ == '__main__':
-    job()
+    if filename is None:
+        return save_to_str(ds, language, topk)
+    else:
+        return save_to_md(ds, filename, language, topk)

@@ -26,18 +26,41 @@ jobs:
         python -m pip install --upgrade pip
         pip install -r requirements.txt
 
-    - name: Run crawler
+    - name: Verify required files
       run: |
-        python crawler.py
+        echo "🔍 检查必需的配置文件..."
+
+        if [ ! -f config.yaml ]; then
+          echo "❌ 错误: config.yaml 文件不存在"
+          echo "请参考项目文档创建配置文件"
+          exit 1
+        fi
+        echo "✅ 配置文件检查通过"
+
+    - name: Run crawler
+      env:
+        FEISHU_WEBHOOK_URL: ${{ secrets.FEISHU_WEBHOOK_URL }}
+        TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+        TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+        DINGTALK_WEBHOOK_URL: ${{ secrets.DINGTALK_WEBHOOK_URL }}
+        WEWORK_WEBHOOK_URL: ${{ secrets.WEWORK_WEBHOOK_URL }}
+        WEWORK_MSG_TYPE: ${{ secrets.WEWORK_MSG_TYPE }}
+        EMAIL_FROM: ${{ secrets.EMAIL_FROM }}
+        EMAIL_PASSWORD: ${{ secrets.EMAIL_PASSWORD }}
+        EMAIL_TO: ${{ secrets.EMAIL_TO }}
+        EMAIL_SMTP_SERVER: ${{ secrets.EMAIL_SMTP_SERVER }}
+        EMAIL_SMTP_PORT: ${{ secrets.EMAIL_SMTP_PORT }}
+        NTFY_TOPIC: ${{ secrets.NTFY_TOPIC }}
+        NTFY_SERVER_URL: ${{ secrets.NTFY_SERVER_URL }}
+        NTFY_TOKEN: ${{ secrets.NTFY_TOKEN }}
+        BARK_URL: ${{ secrets.BARK_URL }}
+        GITHUB_ACTIONS: true
+      run: python main.py
 
     # Runs a set of commands using the runners shell
-    - name: push to origin master
+    - name: Commit and push if changes
       run: |
-        echo "start push"
-        git config --global user.name "shibing624"
-        git config --global user.email "shibing624@126.com"
-        git pull --rebase
-        git add markdowns/*.md
-        git commit -m $(date '+%Y-%m-%d')
-        git pull
-        git push
+        git config --global user.name 'GitHub Actions'
+        git config --global user.email 'actions@github.com'
+        git add -A
+        git diff --quiet && git diff --staged --quiet || (git commit -m "Auto update by GitHub Actions at $(TZ=Asia/Shanghai date)" && git push)
