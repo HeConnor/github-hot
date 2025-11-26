@@ -1024,15 +1024,15 @@ def main():
 
 
 def temp():
-    CONFIG = load_config('config.yaml')
+    CONFIG = load_config('config_local.yaml')
 
-    file = r'./markdowns/2025-11-13.md'
+    file = r'./markdowns/2025-11-26.md'
     with open(file, 'r', encoding='utf-8') as f:
         content = f.read()
     data = md_string_to_data(content)
     languages = ['python', 'jupyter-notebook', 'c++', 'go']
 
-    files = get_weekly_markdown_files('2025-11-13', './markdowns')
+    files = get_weekly_markdown_files('2025-11-26', './markdowns')
     detect_new_project_added(data, files)
     html_content = render_html_content(data, languages, 30, True, )
 

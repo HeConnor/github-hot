@@ -7,6 +7,7 @@
 # @Version  : Python-
 # @TASK:
 import os
+import re
 import yaml
 import pytz
 from datetime import datetime, timedelta
@@ -87,6 +88,7 @@ def load_config(config_path: str = None):
             "dingtalk_batch_size", 20000
         ),
         "FEISHU_BATCH_SIZE": config_data["notification"].get("feishu_batch_size", 29000),
+        "BARK_BATCH_SIZE": config_data["notification"].get("bark_batch_size", 3600),
         "BATCH_SEND_INTERVAL": config_data["notification"]["batch_send_interval"],
         "FEISHU_MESSAGE_SEPARATOR": config_data["notification"][
             "feishu_message_separator"
@@ -179,6 +181,11 @@ def load_config(config_path: str = None):
         "ntfy_token", ""
     )
 
+    # Bark配置
+    config["BARK_URL"] = os.environ.get("BARK_URL", "").strip() or webhooks.get(
+        "bark_url", ""
+    )
+
     # 输出配置来源信息
     notification_sources = []
     if config["FEISHU_WEBHOOK_URL"]:
@@ -203,6 +210,10 @@ def load_config(config_path: str = None):
     if config["NTFY_SERVER_URL"] and config["NTFY_TOPIC"]:
         server_source = "环境变量" if os.environ.get("NTFY_SERVER_URL") else "配置文件"
         notification_sources.append(f"ntfy({server_source})")
+
+    if config["BARK_URL"]:
+        bark_source = "环境变量" if os.environ.get("BARK_URL") else "配置文件"
+        notification_sources.append(f"Bark({bark_source})")
 
     if notification_sources:
         print(f"通知渠道配置来源: {', '.join(notification_sources)}")
@@ -230,6 +241,60 @@ def html_escape(text: str) -> str:
         .replace('"', "&quot;")
         .replace("'", "&#x27;")
     )
+
+
+def strip_markdown(text: str) -> str:
+    """去除文本中的 markdown 语法格式，用于个人微信推送"""
+
+    # 去除粗体 **text** 或 __text__
+    text = re.sub(r'\*\*(.+?)\*\*', r'\1', text)
+    text = re.sub(r'__(.+?)__', r'\1', text)
+
+    # 去除斜体 *text* 或 _text_
+    text = re.sub(r'\*(.+?)\*', r'\1', text)
+    text = re.sub(r'_(.+?)_', r'\1', text)
+
+    # 去除删除线 ~~text~~
+    text = re.sub(r'~~(.+?)~~', r'\1', text)
+
+    # 转换链接 [text](url) -> text url（保留 URL）
+    text = re.sub(r'\[([^\]]+)\]\(([^)]+)\)', r'\1 \2', text)
+    # 如果不需要保留 URL，可以使用下面这行（只保留标题文本）：
+    # text = re.sub(r'\[([^\]]+)\]\([^)]+\)', r'\1', text)
+
+    # 去除图片 ![alt](url) -> alt
+    text = re.sub(r'!\[(.+?)\]\(.+?\)', r'\1', text)
+
+    # 去除行内代码 `code`
+    text = re.sub(r'`(.+?)`', r'\1', text)
+
+    # 去除引用符号 >
+    text = re.sub(r'^>\s*', '', text, flags=re.MULTILINE)
+
+    # 去除标题符号 # ## ### 等
+    text = re.sub(r'^#+\s*', '', text, flags=re.MULTILINE)
+
+    # 去除水平分割线 --- 或 ***
+    text = re.sub(r'^[\-\*]{3,}\s*$', '', text, flags=re.MULTILINE)
+
+    # 去除 HTML 标签 <font color='xxx'>text</font> -> text
+    text = re.sub(r'<font[^>]*>(.+?)</font>', r'\1', text)
+    text = re.sub(r'<[^>]+>', '', text)
+
+    # 清理多余的空行（保留最多两个连续空行）
+    text = re.sub(r'\n{3,}', '\n\n', text)
+
+    return text.strip()
+
+
+def clean_title(title: str) -> str:
+    """清理标题中的特殊字符"""
+    if not isinstance(title, str):
+        title = str(title)
+    cleaned_title = title.replace("\n", " ").replace("\r", " ")
+    cleaned_title = re.sub(r"\s+", " ", cleaned_title)
+    cleaned_title = cleaned_title.strip()
+    return cleaned_title
 
 
 def get_weekly_markdown_files(start_date=None, directory="."):
