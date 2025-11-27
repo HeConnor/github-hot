@@ -61,17 +61,18 @@ def format_title_for_platform(platform: str, title_data) -> str:
         else:
             formatted_title = cleaned_title
 
-        title_prefix = "🆕 " if title_data.get("is_new") else ""
+        title_prefix = "🆕 " if is_new else ""
 
         result = f"{title_prefix}{formatted_title}"
 
         if rank_display:
             result += f" {rank_display}"
-        if title_data["time_display"]:
-            result += f" <font color='grey'>- {title_data['time_display']}</font>"
-        if title_data["count"] > 1:
-            result += f" <font color='green'>({title_data['count']}次)</font>"
-
+        if fork > 0:
+            result += f" <font color='grey'>- Fork: {fork}</font>"
+        if new_star > 0:
+            result += f" <font color='green'>(Today stars: {new_star}次)</font>"
+        if description:
+            result += f"\n    {description}"
         return result
 
     elif platform == "dingtalk":
@@ -80,16 +81,18 @@ def format_title_for_platform(platform: str, title_data) -> str:
         else:
             formatted_title = cleaned_title
 
-        title_prefix = "🆕 " if title_data.get("is_new") else ""
+        title_prefix = "🆕 " if is_new else ""
 
         result = f"{title_prefix}{formatted_title}"
 
         if rank_display:
             result += f" {rank_display}"
-        if title_data["time_display"]:
-            result += f" - {title_data['time_display']}"
-        if title_data["count"] > 1:
-            result += f" ({title_data['count']}次)"
+        if fork > 0:
+            result += f" `- Fork: {fork}`"
+        if new_star > 0:
+            result += f" `(Today stars: {new_star}次)`"
+        if description:
+            result += f"\n    {description}"
 
         return result
 
@@ -99,16 +102,18 @@ def format_title_for_platform(platform: str, title_data) -> str:
         else:
             formatted_title = cleaned_title
 
-        title_prefix = "🆕 " if title_data.get("is_new") else ""
+        title_prefix = "🆕 " if is_new else ""
 
         result = f"{title_prefix}{formatted_title}"
 
         if rank_display:
             result += f" {rank_display}"
-        if title_data["time_display"]:
-            result += f" - {title_data['time_display']}"
-        if title_data["count"] > 1:
-            result += f" ({title_data['count']}次)"
+        if fork > 0:
+            result += f" `- Fork: {fork}`"
+        if new_star > 0:
+            result += f" `(Today stars: {new_star}次)`"
+        if description:
+            result += f"\n    {description}"
 
         return result
 
@@ -118,7 +123,7 @@ def format_title_for_platform(platform: str, title_data) -> str:
     #     else:
     #         formatted_title = cleaned_title
     #
-    #     title_prefix = "🆕 " if title_data.get("is_new") else ""
+    #     title_prefix = "🆕 " if is_new else ""
     #
     #     if show_source:
     #         result = f"[{title_data['source_name']}] {title_prefix}{formatted_title}"
@@ -180,7 +185,7 @@ def format_title_for_platform(platform: str, title_data) -> str:
     #     if title_data["count"] > 1:
     #         formatted_title += f" <font color='green'>({title_data['count']}次)</font>"
     #
-    #     if title_data.get("is_new"):
+    #     if is_new:
     #         formatted_title = f"<div class='new-title'>🆕 {formatted_title}</div>"
     #
     #     return formatted_title
@@ -621,7 +626,7 @@ def send_to_ntfy(
     #     "实时当前榜单": "Realtime Current Ranking",
     # }
     # report_type_en = report_type_en_map.get(report_type, "News Report")
-    report_type_en = 'Github Trending'
+    report_type_en = report_type  # 'Github Trending'
 
     headers = {
         "Content-Type": "text/plain; charset=utf-8",
@@ -812,7 +817,7 @@ def send_to_bark(
             "title": report_type,
             "body": plain_content,
             "sound": "default",
-            "group": "TrendRadar",
+            "group": "GithubHot",
         }
 
         try:

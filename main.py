@@ -1020,7 +1020,7 @@ def main():
     with open(file_path, "w", encoding="utf-8") as f:
         f.write(html_content)
     print('save html file to {filename}'.format(filename=file_path))
-    send_to_notifications(data, languages, CONFIG=CONFIG)
+    send_to_notifications(data, languages, 'Github Trending', CONFIG=CONFIG)
 
 
 def temp():
@@ -1040,13 +1040,13 @@ def temp():
     with open(file_path, "w", encoding="utf-8") as f:
         f.write(html_content)
 
-    send_to_notifications(data, languages, CONFIG=CONFIG)
+    send_to_notifications(data, languages, 'Github Trending', CONFIG=CONFIG)
     pass
 
 
 if __name__ == '__main__':
-    # temp()
     try:
+        # temp()
         main()
     except Exception as e:
         print(f"❌ 程序运行错误: {e}")
