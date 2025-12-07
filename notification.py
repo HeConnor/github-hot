@@ -12,6 +12,93 @@ from utils import get_beijing_time, strip_markdown, clean_title
 import requests
 
 
+# -------------------------------------------------------------------------------------
+# for notification
+def _get_batch_header(format_type: str, batch_num: int, total_batches: int) -> str:
+    """根据 format_type 生成对应格式的批次头部"""
+    if format_type == "telegram":
+        return f"<b>[第 {batch_num}/{total_batches} 批次]</b>\n\n"
+    elif format_type == "slack":
+        return f"*[第 {batch_num}/{total_batches} 批次]*\n\n"
+    elif format_type in ("wework_text", "bark"):
+        # 企业微信文本模式和 Bark 使用纯文本格式
+        return f"[第 {batch_num}/{total_batches} 批次]\n\n"
+    else:
+        # 飞书、钉钉、ntfy、企业微信 markdown 模式
+        return f"**[第 {batch_num}/{total_batches} 批次]**\n\n"
+
+
+def _get_max_batch_header_size(format_type: str) -> int:
+    """估算批次头部的最大字节数（假设最多 99 批次）
+
+    用于在分批时预留空间，避免事后截断破坏内容完整性。
+    """
+    # 生成最坏情况的头部（99/99 批次）
+    max_header = _get_batch_header(format_type, 99, 99)
+    return len(max_header.encode("utf-8"))
+
+
+def _truncate_to_bytes(text: str, max_bytes: int) -> str:
+    """安全截断字符串到指定字节数，避免截断多字节字符"""
+    text_bytes = text.encode("utf-8")
+    if len(text_bytes) <= max_bytes:
+        return text
+
+    # 截断到指定字节数
+    truncated = text_bytes[:max_bytes]
+
+    # 处理可能的不完整 UTF-8 字符
+    for i in range(min(4, len(truncated))):
+        try:
+            return truncated[: len(truncated) - i].decode("utf-8")
+        except UnicodeDecodeError:
+            continue
+
+    # 极端情况：返回空字符串
+    return ""
+
+
+def add_batch_headers(
+    batches: List[str], format_type: str, max_bytes: int
+) -> List[str]:
+    """为批次添加头部，动态计算确保总大小不超过限制
+
+    Args:
+        batches: 原始批次列表
+        format_type: 推送类型（bark, telegram, feishu 等）
+        max_bytes: 该推送类型的最大字节限制
+
+    Returns:
+        添加头部后的批次列表
+    """
+    if len(batches) <= 1:
+        return batches
+
+    total = len(batches)
+    result = []
+
+    for i, content in enumerate(batches, 1):
+        # 生成批次头部
+        header = _get_batch_header(format_type, i, total)
+        header_size = len(header.encode("utf-8"))
+
+        # 动态计算允许的最大内容大小
+        max_content_size = max_bytes - header_size
+        content_size = len(content.encode("utf-8"))
+
+        # 如果超出，截断到安全大小
+        if content_size > max_content_size:
+            print(
+                f"警告：{format_type} 第 {i}/{total} 批次内容({content_size}字节) + 头部({header_size}字节) 超出限制({max_bytes}字节)，截断到 {max_content_size} 字节"
+            )
+            content = _truncate_to_bytes(content, max_content_size)
+
+        result.append(header + content)
+
+    return result
+
+
+# -------------------------------------------------------------------------------------
 def format_rank_display(ranks: List[int], format_type: str) -> str:
     """统一的排名格式化方法"""
     if not ranks:
@@ -96,7 +183,8 @@ def format_title_for_platform(platform: str, title_data) -> str:
 
         return result
 
-    elif platform == "wework":
+    elif platform in ("wework", "bark"):
+        # WeWork 和 Bark 使用 markdown 格式
         if link_url:
             formatted_title = f"[{cleaned_title}]({link_url})"
         else:
@@ -113,7 +201,8 @@ def format_title_for_platform(platform: str, title_data) -> str:
         if new_star > 0:
             result += f" `(Today stars: {new_star}次)`"
         if description:
-            result += f"\n    {description}"
+            result += f"  \n&nbsp;&nbsp;&nbsp;&nbsp;{description}"
+            # result += f"  <br>    {description}"
 
         return result
 
@@ -219,7 +308,7 @@ def split_content_into_batches(
     now = get_beijing_time()
 
     base_header = ""
-    if format_type == "wework":
+    if format_type in ("wework", "bark"):
         base_header = f"**总数：** {total_titles}\n\n\n\n"
     elif format_type == "telegram":
         base_header = f"总数： {total_titles}\n\n"
@@ -234,7 +323,7 @@ def split_content_into_batches(
         base_header += "---\n\n"
 
     base_footer = ""
-    if format_type == "wework":
+    if format_type in ("wework", "bark"):
         base_footer = f"\n\n\n> 更新时间：{now.strftime('%Y-%m-%d %H:%M:%S')}"
         if update_info:
             base_footer += f"\n> TrendRadar 发现新版本 **{update_info['remote_version']}**，当前 **{update_info['current_version']}**"
@@ -302,7 +391,7 @@ def split_content_into_batches(
             continue
         # 构建词组标题
         word_header = ""
-        if format_type == "wework":
+        if format_type in ("wework", "bark"):
             if count >= 10:
                 word_header = (
                     f"🔥 {sequence_display} **{word}** : **{count}** 条\n\n"
@@ -353,7 +442,7 @@ def split_content_into_batches(
         # 构建第一条新闻
         first_title_data = all_lang[0]
         first_news_line = ""
-        if format_type == "wework":
+        if format_type in ("wework", "bark"):
             formatted_title = format_title_for_platform(
                 "wework", first_title_data,
             )
@@ -402,7 +491,7 @@ def split_content_into_batches(
         # 处理剩余新闻条目
         for j in range(start_index, count):
             title_data = all_lang[j]
-            if format_type == "wework":
+            if format_type in ("wework", "bark"):
                 formatted_title = format_title_for_platform(
                     "wework", title_data,
                 )
@@ -445,7 +534,7 @@ def split_content_into_batches(
         # 词组间分隔符
         if i < total_count - 1:
             separator = ""
-            if format_type == "wework":
+            if format_type in ("wework", "bark"):
                 separator = f"\n\n\n\n"
             elif format_type == "telegram":
                 separator = f"\n\n"
@@ -576,6 +665,8 @@ def send_to_notifications(
             update_info_to_send,
             proxy_url,
             mode,
+            bark_batch_size=CONFIG["BARK_BATCH_SIZE"],
+            batch_send_interval=CONFIG["BATCH_SEND_INTERVAL"],
         )
 
     # # 发送邮件
@@ -650,9 +741,14 @@ def send_to_ntfy(
         proxies = {"http": proxy_url, "https": proxy_url}
 
     # 获取分批内容，使用ntfy专用的4KB限制
+    ntfy_batch_size = 3800
+    header_reserve = _get_max_batch_header_size("ntfy")
     batches = split_content_into_batches(
-        report_data, "ntfy", languages, update_info, max_bytes=3800,
+        report_data, "ntfy", languages, update_info, max_bytes=ntfy_batch_size - header_reserve,
     )
+
+    # 统一添加批次头部（已预留空间，不会超限）
+    batches = add_batch_headers(batches, "ntfy", ntfy_batch_size)
 
     total_batches = len(batches)
     print(f"ntfy消息分为 {total_batches} 批次发送 [{report_type}]")
@@ -681,8 +777,8 @@ def send_to_ntfy(
         # 添加批次标识（使用正确的批次编号）
         current_headers = headers.copy()
         if total_batches > 1:
-            batch_header = f"**[第 {actual_batch_num}/{total_batches} 批次]**\n\n"
-            batch_content = batch_header + batch_content
+            # batch_header = f"**[第 {actual_batch_num}/{total_batches} 批次]**\n\n"
+            # batch_content = batch_header + batch_content
             current_headers["Title"] = (
                 f"{report_type_en} ({actual_batch_num}/{total_batches})"
             )
@@ -768,15 +864,34 @@ def send_to_bark(
         bark_batch_size: int = 3600,
         batch_send_interval: int = 3,
 ) -> bool:
-    """发送到Bark（支持分批发送，使用纯文本格式）"""
+    """发送到Bark（支持分批发送，使用 markdown 格式）"""
+    # 日志前缀
     proxies = None
     if proxy_url:
         proxies = {"http": proxy_url, "https": proxy_url}
 
+    # 解析 Bark URL，提取 device_key 和 API 端点
+    # Bark URL 格式: https://api.day.app/device_key 或 https://bark.day.app/device_key
+    from urllib.parse import urlparse
+
+    parsed_url = urlparse(bark_url)
+    device_key = parsed_url.path.strip('/').split('/')[0] if parsed_url.path else None
+
+    if not device_key:
+        print(f"Bark URL 格式错误，无法提取 device_key: {bark_url}")
+        return False
+
+    # 构建正确的 API 端点
+    api_endpoint = f"{parsed_url.scheme}://{parsed_url.netloc}/push"
+
     # 获取分批内容（Bark 限制为 3600 字节以避免 413 错误）
+    header_reserve = _get_max_batch_header_size("bark")
     batches = split_content_into_batches(
-        report_data, "wework", languages, update_info, max_bytes=bark_batch_size,
+        report_data, "bark", languages, update_info, max_bytes=bark_batch_size - header_reserve,
     )
+
+    # 统一添加批次头部（已预留空间，不会超限）
+    batches = add_batch_headers(batches, "bark", bark_batch_size)
 
     total_batches = len(batches)
     print(f"Bark消息分为 {total_batches} 批次发送 [{report_type}]")
@@ -793,15 +908,16 @@ def send_to_bark(
         # 计算正确的批次编号（用户视角的编号）
         actual_batch_num = total_batches - idx + 1
 
-        # 添加批次标识（使用正确的批次编号）
-        if total_batches > 1:
-            batch_header = f"[第 {actual_batch_num}/{total_batches} 批次]\n\n"
-            batch_content = batch_header + batch_content
+        batch_size = len(batch_content.encode("utf-8"))
+        # # 添加批次标识（使用正确的批次编号）
+        # if total_batches > 1:
+        #     batch_header = f"[第 {actual_batch_num}/{total_batches} 批次]\n\n"
+        #     batch_content = batch_header + batch_content
 
-        # 清理 markdown 语法（Bark 不支持 markdown）
-        plain_content = strip_markdown(batch_content)
+        # # 清理 markdown 语法（Bark 不支持 markdown）
+        # plain_content = strip_markdown(batch_content)
 
-        batch_size = len(plain_content.encode("utf-8"))
+        # batch_size = len(plain_content.encode("utf-8"))
         print(
             f"发送Bark第 {actual_batch_num}/{total_batches} 批次（推送顺序: {idx}/{total_batches}），大小：{batch_size} 字节 [{report_type}]"
         )
@@ -815,14 +931,16 @@ def send_to_bark(
         # 构建JSON payload
         payload = {
             "title": report_type,
-            "body": plain_content,
+            "markdown": batch_content,
+            "device_key": device_key,
             "sound": "default",
             "group": "GithubHot",
+            "action": "none",  # 点击推送跳到 APP 不弹出弹框,方便阅读
         }
 
         try:
             response = requests.post(
-                bark_url,
+                api_endpoint,
                 json=payload,
                 proxies=proxies,
                 timeout=30,

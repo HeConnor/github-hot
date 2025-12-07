@@ -16,6 +16,10 @@ pip install -r requirements.txt
 python crawler.py
 ```
 
+### **多渠道实时推送**
+
+- [ ] 多账号推送
+
 <details>
    <summary>👉 点击展开：<strong>ntfy 推送</strong>（开源免费，支持自托管）</summary>
    <br>
@@ -183,7 +187,7 @@ python crawler.py
    **注意事项：**
    - ✅ Bark 使用 APNs 推送，单条消息最大 4KB
    - ✅ 支持自动分批推送，无需担心消息过长
-   - ✅ 推送格式为纯文本（自动去除 Markdown 语法）
+   - ✅ 推送格式为 Markdown
    - ⚠️ 仅支持 iOS 平台
 
    **相关链接：**
