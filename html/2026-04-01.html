@@ -1,0 +1,1330 @@
+
+    <!DOCTYPE html>
+    <html>
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Github Trending</title>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js" integrity="sha512-BNaRQnYJYiPSqHHDb58B0yaPfCu+Wgds8Gp/gU33kqBtgNS4tSPHuGibyoeqMV/TJlSKda6FXzoEyYGjTe+vXA==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+        <style>
+            * { box-sizing: border-box; }
+            body { 
+                font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+                margin: 0; 
+                padding: 16px; 
+                background: #fafafa;
+                color: #333;
+                line-height: 1.5;
+            }
+
+            .container {
+                max-width: 600px;
+                margin: 0 auto;
+                background: white;
+                border-radius: 12px;
+                overflow: hidden;
+                box-shadow: 0 2px 16px rgba(0,0,0,0.06);
+            }
+
+            .header {
+                background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%);
+                color: white;
+                padding: 32px 24px;
+                text-align: center;
+                position: relative;
+            }
+
+            .save-buttons {
+                position: absolute;
+                top: 16px;
+                right: 16px;
+                display: flex;
+                gap: 8px;
+            }
+
+            .save-btn {
+                background: rgba(255, 255, 255, 0.2);
+                border: 1px solid rgba(255, 255, 255, 0.3);
+                color: white;
+                padding: 8px 16px;
+                border-radius: 6px;
+                cursor: pointer;
+                font-size: 13px;
+                font-weight: 500;
+                transition: all 0.2s ease;
+                backdrop-filter: blur(10px);
+                white-space: nowrap;
+            }
+
+            .save-btn:hover {
+                background: rgba(255, 255, 255, 0.3);
+                border-color: rgba(255, 255, 255, 0.5);
+                transform: translateY(-1px);
+            }
+
+            .save-btn:active {
+                transform: translateY(0);
+            }
+
+            .save-btn:disabled {
+                opacity: 0.6;
+                cursor: not-allowed;
+            }
+
+            .header-title {
+                font-size: 22px;
+                font-weight: 700;
+                margin: 0 0 20px 0;
+            }
+
+            .header-info {
+                display: grid;
+                grid-template-columns: 1fr 1fr;
+                gap: 16px;
+                font-size: 14px;
+                opacity: 0.95;
+            }
+
+            .info-item {
+                text-align: center;
+            }
+
+            .info-label {
+                display: block;
+                font-size: 12px;
+                opacity: 0.8;
+                margin-bottom: 4px;
+            }
+
+            .info-value {
+                font-weight: 600;
+                font-size: 16px;
+            }
+
+            .content {
+                padding: 24px;
+            }
+
+            .word-group {
+                margin-bottom: 40px;
+            }
+
+            .word-group:first-child {
+                margin-top: 0;
+            }
+
+            .word-header {
+                display: flex;
+                align-items: center;
+                justify-content: space-between;
+                margin-bottom: 20px;
+                padding-bottom: 8px;
+                border-bottom: 1px solid #f0f0f0;
+            }
+
+            .word-info {
+                display: flex;
+                align-items: center;
+                gap: 12px;
+            }
+
+            .word-name {
+                font-size: 17px;
+                font-weight: 600;
+                color: #1a1a1a;
+            }
+
+            .word-count {
+                color: #666;
+                font-size: 13px;
+                font-weight: 500;
+            }
+
+            .word-count.hot { color: #dc2626; font-weight: 600; }
+            .word-count.warm { color: #ea580c; font-weight: 600; }
+
+            .word-index {
+                color: #999;
+                font-size: 12px;
+            }
+
+            .news-item {
+                margin-bottom: 20px;
+                padding: 16px 0;
+                border-bottom: 1px solid #f5f5f5;
+                position: relative;
+                display: flex;
+                gap: 12px;
+                align-items: center;
+            }
+
+            .news-item:last-child {
+                border-bottom: none;
+            }
+
+            .news-item.new::after {
+                content: "NEW";
+                position: absolute;
+                top: 12px;
+                right: 0;
+                background: #fbbf24;
+                color: #92400e;
+                font-size: 9px;
+                font-weight: 700;
+                padding: 3px 6px;
+                border-radius: 4px;
+                letter-spacing: 0.5px;
+            }
+
+            .news-number {
+                color: #999;
+                font-size: 13px;
+                font-weight: 600;
+                min-width: 20px;
+                text-align: center;
+                flex-shrink: 0;
+                background: #f8f9fa;
+                border-radius: 50%;
+                width: 24px;
+                height: 24px;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                align-self: flex-start;
+                margin-top: 8px;
+            }
+
+            .news-content {
+                flex: 1;
+                min-width: 0;
+                padding-right: 40px;
+            }
+
+            .news-item.new .news-content {
+                padding-right: 50px;
+            }
+
+            .news-header {
+                display: flex;
+                align-items: center;
+                gap: 8px;
+                margin-bottom: 8px;
+                flex-wrap: wrap;
+            }
+
+            .source-name {
+                color: #666;
+                font-size: 12px;
+                font-weight: 500;
+            }
+
+            .rank-num {
+                color: #fff;
+                background: #6b7280;
+                font-size: 10px;
+                font-weight: 700;
+                padding: 2px 6px;
+                border-radius: 10px;
+                min-width: 18px;
+                text-align: center;
+            }
+
+            .rank-num.top { background: #dc2626; }
+            .rank-num.high { background: #ea580c; }
+
+            .time-info {
+                color: #999;
+                font-size: 11px;
+            }
+
+            .count-info {
+                color: #059669;
+                font-size: 11px;
+                font-weight: 500;
+            }
+
+            .news-title {
+                font-size: 15px;
+                line-height: 1.4;
+                color: #1a1a1a;
+                margin: 0;
+            }
+
+            .news-link {
+                color: #2563eb;
+                text-decoration: none;
+            }
+
+            .news-link:hover {
+                text-decoration: underline;
+            }
+
+            .news-link:visited {
+                color: #7c3aed;
+            }
+
+            .new-section {
+                margin-top: 10px;   
+                padding-top: 10px;
+                border-top: 2px solid #f0f0f0;
+                margin-bottom: 40px;   
+                padding-bottom: 24px;
+                border-bottom: 2px solid #f0f0f0;
+            }
+
+            .new-section-title {
+                color: #1a1a1a;
+                font-size: 16px;
+                font-weight: 600;
+                margin: 0 0 20px 0;
+            }
+
+            .new-source-group {
+                margin-bottom: 24px;
+            }
+
+            .new-source-title {
+                color: #666;
+                font-size: 13px;
+                font-weight: 500;
+                margin: 0 0 12px 0;
+                padding-bottom: 6px;
+                border-bottom: 1px solid #f5f5f5;
+            }
+
+            .new-item {
+                display: flex;
+                align-items: center;
+                gap: 12px;
+                padding: 8px 0;
+                border-bottom: 1px solid #f9f9f9;
+            }
+
+            .new-item:last-child {
+                border-bottom: none;
+            }
+
+            .new-item-number {
+                color: #999;
+                font-size: 12px;
+                font-weight: 600;
+                min-width: 18px;
+                text-align: center;
+                flex-shrink: 0;
+                background: #f8f9fa;
+                border-radius: 50%;
+                width: 20px;
+                height: 20px;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+            }
+
+            .new-item-rank {
+                color: #fff;
+                background: #6b7280;
+                font-size: 10px;
+                font-weight: 700;
+                padding: 3px 6px;
+                border-radius: 8px;
+                min-width: 20px;
+                text-align: center;
+                flex-shrink: 0;
+            }
+
+            .new-item-rank.top { background: #dc2626; }
+            .new-item-rank.high { background: #ea580c; }
+
+            .new-item-content {
+                flex: 1;
+                min-width: 0;
+            }
+
+            .new-item-title {
+                font-size: 14px;
+                line-height: 1.4;
+                color: #1a1a1a;
+                margin: 0;
+            }
+
+            .error-section {
+                background: #fef2f2;
+                border: 1px solid #fecaca;
+                border-radius: 8px;
+                padding: 16px;
+                margin-bottom: 24px;
+            }
+
+            .error-title {
+                color: #dc2626;
+                font-size: 14px;
+                font-weight: 600;
+                margin: 0 0 8px 0;
+            }
+
+            .error-list {
+                list-style: none;
+                padding: 0;
+                margin: 0;
+            }
+
+            .error-item {
+                color: #991b1b;
+                font-size: 13px;
+                padding: 2px 0;
+                font-family: 'SF Mono', Consolas, monospace;
+            }
+
+            .footer {
+                margin-top: 32px;
+                padding: 20px 24px;
+                background: #f8f9fa;
+                border-top: 1px solid #e5e7eb;
+                text-align: center;
+            }
+
+            .footer-content {
+                font-size: 13px;
+                color: #6b7280;
+                line-height: 1.6;
+            }
+
+            .footer-link {
+                color: #4f46e5;
+                text-decoration: none;
+                font-weight: 500;
+                transition: color 0.2s ease;
+            }
+
+            .footer-link:hover {
+                color: #7c3aed;
+                text-decoration: underline;
+            }
+
+            .project-name {
+                font-weight: 600;
+                color: #374151;
+            }
+
+            @media (max-width: 480px) {
+                body { padding: 12px; }
+                .header { padding: 24px 20px; }
+                .content { padding: 20px; }
+                .footer { padding: 16px 20px; }
+                .header-info { grid-template-columns: 1fr; gap: 12px; }
+                .news-header { gap: 6px; }
+                .news-content { padding-right: 45px; }
+                .news-item { gap: 8px; }
+                .new-item { gap: 8px; }
+                .news-number { width: 20px; height: 20px; font-size: 12px; }
+                .save-buttons {
+                    position: static;
+                    margin-bottom: 16px;
+                    display: flex;
+                    gap: 8px;
+                    justify-content: center;
+                    flex-direction: column;
+                    width: 100%;
+                }
+                .save-btn {
+                    width: 100%;
+                }
+            }
+        </style>
+    </head>
+    <body>
+        <div class="container">
+            <div class="header">
+                <div class="save-buttons">
+                    <button class="save-btn" onclick="saveAsImage()">保存为图片</button>
+                    <button class="save-btn" onclick="saveAsMultipleImages()">分段保存</button>
+                </div>
+                <div class="header-title">Github Trending</div>
+                <div class="header-info">
+                    <div class="info-item">
+                        <span class="info-label">报告类型</span>
+                        <span class="info-value">当日汇总</span>
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label">总数</span>
+                        <span class="info-value">50 条</span>
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label">热点</span>
+                        <span class="info-value">10 条</span>
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label">生成时间</span>
+                        <span class="info-value">04-01 12:51</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="content">
+            <div class="word-group">
+                <div class="word-header">
+                    <div class="word-info">
+                        <div class="word-name">All</div>
+                        <div class="word-count hot">10 条</div>
+                    </div>
+                    <div class="word-index">1/5</div>
+                </div>
+                <div class="news-item ">
+                    <div class="news-number">1</div>
+                    <div class="news-content">
+                        <div class="news-header">
+                            <span class="source-name"><a href="https://github.com/microsoft/VibeVoice" target="_blank" class="news-link">microsoft / VibeVoice</a></span><span class="rank-num top">Star: 33441</span><span class="time-info">Fork: 3780</span><span class="count-info">Today stars: 3863</span>
+                        </div>
+                        <div class="news-title">Open-Source Frontier Voice AI
+                        </div>
+                    </div>
+                </div>
+                <div class="news-item ">
+                    <div class="news-number">2</div>
+                    <div class="news-content">
+                        <div class="news-header">
+                            <span class="source-name"><a href="https://github.com/obra/superpowers" target="_blank" class="news-link">obra / superpowers</a></span><span class="rank-num top">Star: 128605</span><span class="time-info">Fork: 10535</span><span class="count-info">Today stars: 2620</span>
+                        </div>
+                        <div class="news-title">An agentic skills framework &amp; software development methodology that works.
+                        </div>
+                    </div>
+                </div>
+                <div class="news-item ">
+                    <div class="news-number">3</div>
+                    <div class="news-content">
+                        <div class="news-header">
+                            <span class="source-name"><a href="https://github.com/shanraisshan/claude-code-best-practice" target="_blank" class="news-link">shanraisshan / claude-code-best-practice</a></span><span class="rank-num top">Star: 29149</span><span class="time-info">Fork: 2479</span><span class="count-info">Today stars: 2407</span>
+                        </div>
+                        <div class="news-title">practice made claude perfect
+                        </div>
+                    </div>
+                </div>
+                <div class="news-item ">
+                    <div class="news-number">4</div>
+                    <div class="news-content">
+                        <div class="news-header">
+                            <span class="source-name"><a href="https://github.com/luongnv89/claude-howto" target="_blank" class="news-link">luongnv89 / claude-howto</a></span><span class="rank-num top">Star: 13702</span><span class="time-info">Fork: 1524</span><span class="count-info">Today stars: 2390</span>
+                        </div>
+                        <div class="news-title">A visual, example-driven guide to Claude Code — from basic concepts to advanced agents, with copy-paste templates that bring immediate value.
+                        </div>
+                    </div>
+                </div>
+                <div class="news-item ">
+                    <div class="news-number">5</div>
+                    <div class="news-content">
+                        <div class="news-header">
+                            <span class="source-name"><a href="https://github.com/NousResearch/hermes-agent" target="_blank" class="news-link">NousResearch / hermes-agent</a></span><span class="rank-num top">Star: 20634</span><span class="time-info">Fork: 2509</span><span class="count-info">Today stars: 1907</span>
+                        </div>
+                        <div class="news-title">The agent that grows with you
+                        </div>
+                    </div>
+                </div>
+                <div class="news-item ">
+                    <div class="news-number">6</div>
+                    <div class="news-content">
+                        <div class="news-header">
+                            <span class="source-name"><a href="https://github.com/Yeachan-Heo/oh-my-claudecode" target="_blank" class="news-link">Yeachan-Heo / oh-my-claudecode</a></span><span class="rank-num top">Star: 19512</span><span class="time-info">Fork: 1490</span><span class="count-info">Today stars: 1126</span>
+                        </div>
+                        <div class="news-title">Teams-first Multi-agent orchestration for Claude Code
+                        </div>
+                    </div>
+                </div>
+                <div class="news-item new">
+                    <div class="news-number">7</div>
+                    <div class="news-content">
+                        <div class="news-header">
+                            <span class="source-name"><a href="https://github.com/jwasham/coding-interview-university" target="_blank" class="news-link">jwasham / coding-interview-university</a></span><span class="rank-num top">Star: 339772</span><span class="time-info">Fork: 81789</span><span class="count-info">Today stars: 873</span>
+                        </div>
+                        <div class="news-title">A complete computer science study plan to become a software engineer.
+                        </div>
+                    </div>
+                </div>
+                <div class="news-item ">
+                    <div class="news-number">8</div>
+                    <div class="news-content">
+                        <div class="news-header">
+                            <span class="source-name"><a href="https://github.com/sherlock-project/sherlock" target="_blank" class="news-link">sherlock-project / sherlock</a></span><span class="rank-num top">Star: 75658</span><span class="time-info">Fork: 8890</span><span class="count-info">Today stars: 865</span>
+                        </div>
+                        <div class="news-title">Hunt down social media accounts by username across social networks
+                        </div>
+                    </div>
+                </div>
+                <div class="news-item new">
+                    <div class="news-number">9</div>
+                    <div class="news-content">
+                        <div class="news-header">
+                            <span class="source-name"><a href="https://github.com/PaddlePaddle/PaddleOCR" target="_blank" class="news-link">PaddlePaddle / PaddleOCR</a></span><span class="rank-num top">Star: 74343</span><span class="time-info">Fork: 10126</span><span class="count-info">Today stars: 439</span>
+                        </div>
+                        <div class="news-title">Turn any PDF or image document into structured data for your AI. A powerful, lightweight OCR toolkit that bridges the gap between images/PDFs and LLMs. Supports 100+ languages.
+                        </div>
+                    </div>
+                </div>
+                <div class="news-item new">
+                    <div class="news-number">10</div>
+                    <div class="news-content">
+                        <div class="news-header">
+                            <span class="source-name"><a href="https://github.com/vas3k/TaxHacker" target="_blank" class="news-link">vas3k / TaxHacker</a></span><span class="rank-num ">Star: 3822</span><span class="time-info">Fork: 602</span><span class="count-info">Today stars: 318</span>
+                        </div>
+                        <div class="news-title">Self-hosted AI accounting app. LLM analyzer for receipts, invoices, transactions with custom prompts and categories
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="word-group">
+                <div class="word-header">
+                    <div class="word-info">
+                        <div class="word-name">Python</div>
+                        <div class="word-count hot">10 条</div>
+                    </div>
+                    <div class="word-index">2/5</div>
+                </div>
+                <div class="news-item ">
+                    <div class="news-number">1</div>
+                    <div class="news-content">
+                        <div class="news-header">
+                            <span class="source-name"><a href="https://github.com/microsoft/VibeVoice" target="_blank" class="news-link">microsoft / VibeVoice</a></span><span class="rank-num top">Star: 33441</span><span class="time-info">Fork: 3780</span><span class="count-info">Today stars: 3863</span>
+                        </div>
+                        <div class="news-title">Open-Source Frontier Voice AI
+                        </div>
+                    </div>
+                </div>
+                <div class="news-item ">
+                    <div class="news-number">2</div>
+                    <div class="news-content">
+                        <div class="news-header">
+                            <span class="source-name"><a href="https://github.com/luongnv89/claude-howto" target="_blank" class="news-link">luongnv89 / claude-howto</a></span><span class="rank-num top">Star: 13702</span><span class="time-info">Fork: 1524</span><span class="count-info">Today stars: 2390</span>
+                        </div>
+                        <div class="news-title">A visual, example-driven guide to Claude Code — from basic concepts to advanced agents, with copy-paste templates that bring immediate value.
+                        </div>
+                    </div>
+                </div>
+                <div class="news-item ">
+                    <div class="news-number">3</div>
+                    <div class="news-content">
+                        <div class="news-header">
+                            <span class="source-name"><a href="https://github.com/NousResearch/hermes-agent" target="_blank" class="news-link">NousResearch / hermes-agent</a></span><span class="rank-num top">Star: 20634</span><span class="time-info">Fork: 2509</span><span class="count-info">Today stars: 1907</span>
+                        </div>
+                        <div class="news-title">The agent that grows with you
+                        </div>
+                    </div>
+                </div>
+                <div class="news-item ">
+                    <div class="news-number">4</div>
+                    <div class="news-content">
+                        <div class="news-header">
+                            <span class="source-name"><a href="https://github.com/sherlock-project/sherlock" target="_blank" class="news-link">sherlock-project / sherlock</a></span><span class="rank-num top">Star: 75658</span><span class="time-info">Fork: 8890</span><span class="count-info">Today stars: 865</span>
+                        </div>
+                        <div class="news-title">Hunt down social media accounts by username across social networks
+                        </div>
+                    </div>
+                </div>
+                <div class="news-item ">
+                    <div class="news-number">5</div>
+                    <div class="news-content">
+                        <div class="news-header">
+                            <span class="source-name"><a href="https://github.com/hacksider/Deep-Live-Cam" target="_blank" class="news-link">hacksider / Deep-Live-Cam</a></span><span class="rank-num top">Star: 87108</span><span class="time-info">Fork: 12632</span><span class="count-info">Today stars: 849</span>
+                        </div>
+                        <div class="news-title">real time face swap and one-click video deepfake with only a single image
+                        </div>
+                    </div>
+                </div>
+                <div class="news-item ">
+                    <div class="news-number">6</div>
+                    <div class="news-content">
+                        <div class="news-header">
+                            <span class="source-name"><a href="https://github.com/OpenBB-finance/OpenBB" target="_blank" class="news-link">OpenBB-finance / OpenBB</a></span><span class="rank-num top">Star: 64833</span><span class="time-info">Fork: 6370</span><span class="count-info">Today stars: 506</span>
+                        </div>
+                        <div class="news-title">Financial data platform for analysts, quants and AI agents.
+                        </div>
+                    </div>
+                </div>
+                <div class="news-item new">
+                    <div class="news-number">7</div>
+                    <div class="news-content">
+                        <div class="news-header">
+                            <span class="source-name"><a href="https://github.com/google-research/timesfm" target="_blank" class="news-link">google-research / timesfm</a></span><span class="rank-num top">Star: 11547</span><span class="time-info">Fork: 951</span><span class="count-info">Today stars: 495</span>
+                        </div>
+                        <div class="news-title">TimesFM (Time Series Foundation Model) is a pretrained time-series foundation model developed by Google Research for time-series forecasting.
+                        </div>
+                    </div>
+                </div>
+                <div class="news-item new">
+                    <div class="news-number">8</div>
+                    <div class="news-content">
+                        <div class="news-header">
+                            <span class="source-name"><a href="https://github.com/PaddlePaddle/PaddleOCR" target="_blank" class="news-link">PaddlePaddle / PaddleOCR</a></span><span class="rank-num top">Star: 74343</span><span class="time-info">Fork: 10126</span><span class="count-info">Today stars: 439</span>
+                        </div>
+                        <div class="news-title">Turn any PDF or image document into structured data for your AI. A powerful, lightweight OCR toolkit that bridges the gap between images/PDFs and LLMs. Supports 100+ languages.
+                        </div>
+                    </div>
+                </div>
+                <div class="news-item new">
+                    <div class="news-number">9</div>
+                    <div class="news-content">
+                        <div class="news-header">
+                            <span class="source-name"><a href="https://github.com/ComposioHQ/awesome-claude-skills" target="_blank" class="news-link">ComposioHQ / awesome-claude-skills</a></span><span class="rank-num top">Star: 49965</span><span class="time-info">Fork: 5187</span><span class="count-info">Today stars: 374</span>
+                        </div>
+                        <div class="news-title">A curated list of awesome Claude Skills, resources, and tools for customizing Claude AI workflows
+                        </div>
+                    </div>
+                </div>
+                <div class="news-item ">
+                    <div class="news-number">10</div>
+                    <div class="news-content">
+                        <div class="news-header">
+                            <span class="source-name"><a href="https://github.com/Z4nzu/hackingtool" target="_blank" class="news-link">Z4nzu / hackingtool</a></span><span class="rank-num top">Star: 57099</span><span class="time-info">Fork: 6281</span><span class="count-info">Today stars: 309</span>
+                        </div>
+                        <div class="news-title">ALL IN ONE Hacking Tool For Hackers
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="word-group">
+                <div class="word-header">
+                    <div class="word-info">
+                        <div class="word-name">Jupyter-notebook</div>
+                        <div class="word-count hot">10 条</div>
+                    </div>
+                    <div class="word-index">3/5</div>
+                </div>
+                <div class="news-item ">
+                    <div class="news-number">1</div>
+                    <div class="news-content">
+                        <div class="news-header">
+                            <span class="source-name"><a href="https://github.com/microsoft/ai-agents-for-beginners" target="_blank" class="news-link">microsoft / ai-agents-for-beginners</a></span><span class="rank-num top">Star: 55600</span><span class="time-info">Fork: 19220</span><span class="count-info">Today stars: 111</span>
+                        </div>
+                        <div class="news-title">12 Lessons to Get Started Building AI Agents
+                        </div>
+                    </div>
+                </div>
+                <div class="news-item ">
+                    <div class="news-number">2</div>
+                    <div class="news-content">
+                        <div class="news-header">
+                            <span class="source-name"><a href="https://github.com/microsoft/generative-ai-for-beginners" target="_blank" class="news-link">microsoft / generative-ai-for-beginners</a></span><span class="rank-num top">Star: 108777</span><span class="time-info">Fork: 58325</span><span class="count-info">Today stars: 55</span>
+                        </div>
+                        <div class="news-title">21 Lessons, Get Started Building with Generative AI
+                        </div>
+                    </div>
+                </div>
+                <div class="news-item ">
+                    <div class="news-number">3</div>
+                    <div class="news-content">
+                        <div class="news-header">
+                            <span class="source-name"><a href="https://github.com/patchy631/ai-engineering-hub" target="_blank" class="news-link">patchy631 / ai-engineering-hub</a></span><span class="rank-num top">Star: 33040</span><span class="time-info">Fork: 5459</span><span class="count-info">Today stars: 50</span>
+                        </div>
+                        <div class="news-title">In-depth tutorials on LLMs, RAGs and real-world AI agent applications.
+                        </div>
+                    </div>
+                </div>
+                <div class="news-item ">
+                    <div class="news-number">4</div>
+                    <div class="news-content">
+                        <div class="news-header">
+                            <span class="source-name"><a href="https://github.com/anthropics/prompt-eng-interactive-tutorial" target="_blank" class="news-link">anthropics / prompt-eng-interactive-tutorial</a></span><span class="rank-num top">Star: 34308</span><span class="time-info">Fork: 3581</span><span class="count-info">Today stars: 47</span>
+                        </div>
+                        <div class="news-title">Anthropic&#x27;s Interactive Prompt Engineering Tutorial
+                        </div>
+                    </div>
+                </div>
+                <div class="news-item ">
+                    <div class="news-number">5</div>
+                    <div class="news-content">
+                        <div class="news-header">
+                            <span class="source-name"><a href="https://github.com/DataTalksClub/data-engineering-zoomcamp" target="_blank" class="news-link">DataTalksClub / data-engineering-zoomcamp</a></span><span class="rank-num top">Star: 39460</span><span class="time-info">Fork: 7927</span><span class="count-info">Today stars: 28</span>
+                        </div>
+                        <div class="news-title">Data Engineering Zoomcamp is a free 9-week course on building production-ready data pipelines. The next cohort starts in January 2026. Join the course here 👇🏼
+                        </div>
+                    </div>
+                </div>
+                <div class="news-item ">
+                    <div class="news-number">6</div>
+                    <div class="news-content">
+                        <div class="news-header">
+                            <span class="source-name"><a href="https://github.com/QwenLM/Qwen3-VL" target="_blank" class="news-link">QwenLM / Qwen3-VL</a></span><span class="rank-num top">Star: 18836</span><span class="time-info">Fork: 1709</span><span class="count-info">Today stars: 18</span>
+                        </div>
+                        <div class="news-title">Qwen3-VL is the multimodal large language model series developed by Qwen team, Alibaba Cloud.
+                        </div>
+                    </div>
+                </div>
+                <div class="news-item ">
+                    <div class="news-number">7</div>
+                    <div class="news-content">
+                        <div class="news-header">
+                            <span class="source-name"><a href="https://github.com/ageron/handson-ml3" target="_blank" class="news-link">ageron / handson-ml3</a></span><span class="rank-num top">Star: 12774</span><span class="time-info">Fork: 4952</span><span class="count-info">Today stars: 18</span>
+                        </div>
+                        <div class="news-title">A series of Jupyter notebooks that walk you through the fundamentals of Machine Learning and Deep Learning in Python using Scikit-Learn, Keras and TensorFlow 2.
+                        </div>
+                    </div>
+                </div>
+                <div class="news-item new">
+                    <div class="news-number">8</div>
+                    <div class="news-content">
+                        <div class="news-header">
+                            <span class="source-name"><a href="https://github.com/ed-donner/agents" target="_blank" class="news-link">ed-donner / agents</a></span><span class="rank-num ">Star: 4523</span><span class="time-info">Fork: 3842</span><span class="count-info">Today stars: 14</span>
+                        </div>
+                        <div class="news-title">Repo for the Complete Agentic AI Engineering Course
+                        </div>
+                    </div>
+                </div>
+                <div class="news-item new">
+                    <div class="news-number">9</div>
+                    <div class="news-content">
+                        <div class="news-header">
+                            <span class="source-name"><a href="https://github.com/facebookresearch/sam2" target="_blank" class="news-link">facebookresearch / sam2</a></span><span class="rank-num top">Star: 18829</span><span class="time-info">Fork: 2406</span><span class="count-info">Today stars: 12</span>
+                        </div>
+                        <div class="news-title">The repository provides code for running inference with the Meta Segment Anything Model 2 (SAM 2), links for downloading the trained model checkpoints, and example notebooks that show how to use the model.
+                        </div>
+                    </div>
+                </div>
+                <div class="news-item ">
+                    <div class="news-number">10</div>
+                    <div class="news-content">
+                        <div class="news-header">
+                            <span class="source-name"><a href="https://github.com/GokuMohandas/Made-With-ML" target="_blank" class="news-link">GokuMohandas / Made-With-ML</a></span><span class="rank-num top">Star: 47047</span><span class="time-info">Fork: 7391</span><span class="count-info">Today stars: 11</span>
+                        </div>
+                        <div class="news-title">Learn how to develop, deploy and iterate on production-grade ML applications.
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="word-group">
+                <div class="word-header">
+                    <div class="word-info">
+                        <div class="word-name">C++</div>
+                        <div class="word-count hot">10 条</div>
+                    </div>
+                    <div class="word-index">4/5</div>
+                </div>
+                <div class="news-item ">
+                    <div class="news-number">1</div>
+                    <div class="news-content">
+                        <div class="news-header">
+                            <span class="source-name"><a href="https://github.com/ggml-org/llama.cpp" target="_blank" class="news-link">ggml-org / llama.cpp</a></span><span class="rank-num top">Star: 100455</span><span class="time-info">Fork: 16110</span><span class="count-info">Today stars: 353</span>
+                        </div>
+                        <div class="news-title">LLM inference in C/C++
+                        </div>
+                    </div>
+                </div>
+                <div class="news-item ">
+                    <div class="news-number">2</div>
+                    <div class="news-content">
+                        <div class="news-header">
+                            <span class="source-name"><a href="https://github.com/LadybirdBrowser/ladybird" target="_blank" class="news-link">LadybirdBrowser / ladybird</a></span><span class="rank-num top">Star: 61983</span><span class="time-info">Fork: 2909</span><span class="count-info">Today stars: 82</span>
+                        </div>
+                        <div class="news-title">Truly independent web browser
+                        </div>
+                    </div>
+                </div>
+                <div class="news-item ">
+                    <div class="news-number">3</div>
+                    <div class="news-content">
+                        <div class="news-header">
+                            <span class="source-name"><a href="https://github.com/78/xiaozhi-esp32" target="_blank" class="news-link">78 / xiaozhi-esp32</a></span><span class="rank-num top">Star: 25266</span><span class="time-info">Fork: 5450</span><span class="count-info">Today stars: 37</span>
+                        </div>
+                        <div class="news-title">An MCP-based chatbot | 一个基于MCP的聊天机器人
+                        </div>
+                    </div>
+                </div>
+                <div class="news-item ">
+                    <div class="news-number">4</div>
+                    <div class="news-content">
+                        <div class="news-header">
+                            <span class="source-name"><a href="https://github.com/wazuh/wazuh" target="_blank" class="news-link">wazuh / wazuh</a></span><span class="rank-num top">Star: 15134</span><span class="time-info">Fork: 2219</span><span class="count-info">Today stars: 34</span>
+                        </div>
+                        <div class="news-title">Wazuh - The Open Source Security Platform. Unified XDR and SIEM protection for endpoints and cloud workloads.
+                        </div>
+                    </div>
+                </div>
+                <div class="news-item new">
+                    <div class="news-number">5</div>
+                    <div class="news-content">
+                        <div class="news-header">
+                            <span class="source-name"><a href="https://github.com/daijro/camoufox" target="_blank" class="news-link">daijro / camoufox</a></span><span class="rank-num ">Star: 6547</span><span class="time-info">Fork: 570</span><span class="count-info">Today stars: 33</span>
+                        </div>
+                        <div class="news-title">🦊 Anti-detect browser
+                        </div>
+                    </div>
+                </div>
+                <div class="news-item ">
+                    <div class="news-number">6</div>
+                    <div class="news-content">
+                        <div class="news-header">
+                            <span class="source-name"><a href="https://github.com/Atmosphere-NX/Atmosphere" target="_blank" class="news-link">Atmosphere-NX / Atmosphere</a></span><span class="rank-num top">Star: 18646</span><span class="time-info">Fork: 1429</span><span class="count-info">Today stars: 30</span>
+                        </div>
+                        <div class="news-title">Atmosphère is a work-in-progress customized firmware for the Nintendo Switch.
+                        </div>
+                    </div>
+                </div>
+                <div class="news-item ">
+                    <div class="news-number">7</div>
+                    <div class="news-content">
+                        <div class="news-header">
+                            <span class="source-name"><a href="https://github.com/zhongyang219/TrafficMonitor" target="_blank" class="news-link">zhongyang219 / TrafficMonitor</a></span><span class="rank-num top">Star: 43732</span><span class="time-info">Fork: 3630</span><span class="count-info">Today stars: 28</span>
+                        </div>
+                        <div class="news-title">这是一个用于显示当前网速、CPU及内存利用率的桌面悬浮窗软件，并支持任务栏显示，支持更换皮肤。
+                        </div>
+                    </div>
+                </div>
+                <div class="news-item new">
+                    <div class="news-number">8</div>
+                    <div class="news-content">
+                        <div class="news-header">
+                            <span class="source-name"><a href="https://github.com/MrNeRF/LichtFeld-Studio" target="_blank" class="news-link">MrNeRF / LichtFeld-Studio</a></span><span class="rank-num ">Star: 2717</span><span class="time-info">Fork: 282</span><span class="count-info">Today stars: 27</span>
+                        </div>
+                        <div class="news-title">Train, inspect, edit, automate, and export 3D Gaussian Splatting scenes from a single native application.
+                        </div>
+                    </div>
+                </div>
+                <div class="news-item ">
+                    <div class="news-number">9</div>
+                    <div class="news-content">
+                        <div class="news-header">
+                            <span class="source-name"><a href="https://github.com/jellyfin/jellyfin-desktop" target="_blank" class="news-link">jellyfin / jellyfin-desktop</a></span><span class="rank-num ">Star: 209</span><span class="time-info">Fork: 20</span><span class="count-info">Today stars: 21</span>
+                        </div>
+                        <div class="news-title">Jellyfin Desktop Client
+                        </div>
+                    </div>
+                </div>
+                <div class="news-item new">
+                    <div class="news-number">10</div>
+                    <div class="news-content">
+                        <div class="news-header">
+                            <span class="source-name"><a href="https://github.com/mozilla-ai/llamafile" target="_blank" class="news-link">mozilla-ai / llamafile</a></span><span class="rank-num top">Star: 23946</span><span class="time-info">Fork: 1291</span><span class="count-info">Today stars: 18</span>
+                        </div>
+                        <div class="news-title">Distribute and run LLMs with a single file.
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="word-group">
+                <div class="word-header">
+                    <div class="word-info">
+                        <div class="word-name">Go</div>
+                        <div class="word-count hot">10 条</div>
+                    </div>
+                    <div class="word-index">5/5</div>
+                </div>
+                <div class="news-item new">
+                    <div class="news-number">1</div>
+                    <div class="news-content">
+                        <div class="news-header">
+                            <span class="source-name"><a href="https://github.com/5rahim/seanime" target="_blank" class="news-link">5rahim / seanime</a></span><span class="rank-num ">Star: 3132</span><span class="time-info">Fork: 202</span><span class="count-info">Today stars: 106</span>
+                        </div>
+                        <div class="news-title">Open-source media server with a web interface and desktop app for anime and manga.
+                        </div>
+                    </div>
+                </div>
+                <div class="news-item ">
+                    <div class="news-number">2</div>
+                    <div class="news-content">
+                        <div class="news-header">
+                            <span class="source-name"><a href="https://github.com/wavetermdev/waveterm" target="_blank" class="news-link">wavetermdev / waveterm</a></span><span class="rank-num top">Star: 19064</span><span class="time-info">Fork: 874</span><span class="count-info">Today stars: 83</span>
+                        </div>
+                        <div class="news-title">An open-source, AI-integrated, cross-platform terminal for seamless workflows
+                        </div>
+                    </div>
+                </div>
+                <div class="news-item ">
+                    <div class="news-number">3</div>
+                    <div class="news-content">
+                        <div class="news-header">
+                            <span class="source-name"><a href="https://github.com/harness/harness" target="_blank" class="news-link">harness / harness</a></span><span class="rank-num top">Star: 34272</span><span class="time-info">Fork: 2927</span><span class="count-info">Today stars: 68</span>
+                        </div>
+                        <div class="news-title">Harness Open Source is an end-to-end developer platform with Source Control Management, CI/CD Pipelines, Hosted Developer Environments, and Artifact Registries.
+                        </div>
+                    </div>
+                </div>
+                <div class="news-item ">
+                    <div class="news-number">4</div>
+                    <div class="news-content">
+                        <div class="news-header">
+                            <span class="source-name"><a href="https://github.com/putyy/res-downloader" target="_blank" class="news-link">putyy / res-downloader</a></span><span class="rank-num top">Star: 16246</span><span class="time-info">Fork: 1998</span><span class="count-info">Today stars: 63</span>
+                        </div>
+                        <div class="news-title">视频号、小程序、抖音、快手、小红书、直播流、m3u8、酷狗、QQ音乐等常见网络资源下载!
+                        </div>
+                    </div>
+                </div>
+                <div class="news-item new">
+                    <div class="news-number">5</div>
+                    <div class="news-content">
+                        <div class="news-header">
+                            <span class="source-name"><a href="https://github.com/0xERR0R/blocky" target="_blank" class="news-link">0xERR0R / blocky</a></span><span class="rank-num ">Star: 6392</span><span class="time-info">Fork: 282</span><span class="count-info">Today stars: 59</span>
+                        </div>
+                        <div class="news-title">Fast and lightweight DNS proxy as ad-blocker for local network with many features
+                        </div>
+                    </div>
+                </div>
+                <div class="news-item ">
+                    <div class="news-number">6</div>
+                    <div class="news-content">
+                        <div class="news-header">
+                            <span class="source-name"><a href="https://github.com/CJackHwang/ds2api" target="_blank" class="news-link">CJackHwang / ds2api</a></span><span class="rank-num ">Star: 780</span><span class="time-info">Fork: 268</span><span class="count-info">Today stars: 38</span>
+                        </div>
+                        <div class="news-title">Deepseek客户端对话转API，高性能，多账号轮询，包含完整后台管理系统，支持纯vercel、docker部署使用。兼容Openclaw🦞、Roocode、Claudecode、Kilocode等工具
+                        </div>
+                    </div>
+                </div>
+                <div class="news-item ">
+                    <div class="news-number">7</div>
+                    <div class="news-content">
+                        <div class="news-header">
+                            <span class="source-name"><a href="https://github.com/riba2534/feishu-cli" target="_blank" class="news-link">riba2534 / feishu-cli</a></span><span class="rank-num ">Star: 746</span><span class="time-info">Fork: 89</span><span class="count-info">Today stars: 36</span>
+                        </div>
+                        <div class="news-title">
+                        </div>
+                    </div>
+                </div>
+                <div class="news-item new">
+                    <div class="news-number">8</div>
+                    <div class="news-content">
+                        <div class="news-header">
+                            <span class="source-name"><a href="https://github.com/milvus-io/milvus" target="_blank" class="news-link">milvus-io / milvus</a></span><span class="rank-num top">Star: 43542</span><span class="time-info">Fork: 3922</span><span class="count-info">Today stars: 31</span>
+                        </div>
+                        <div class="news-title">Milvus is a high-performance, cloud-native vector database built for scalable vector ANN search
+                        </div>
+                    </div>
+                </div>
+                <div class="news-item new">
+                    <div class="news-number">9</div>
+                    <div class="news-content">
+                        <div class="news-header">
+                            <span class="source-name"><a href="https://github.com/wailsapp/wails" target="_blank" class="news-link">wailsapp / wails</a></span><span class="rank-num top">Star: 33527</span><span class="time-info">Fork: 1638</span><span class="count-info">Today stars: 26</span>
+                        </div>
+                        <div class="news-title">Create beautiful applications using Go
+                        </div>
+                    </div>
+                </div>
+                <div class="news-item new">
+                    <div class="news-number">10</div>
+                    <div class="news-content">
+                        <div class="news-header">
+                            <span class="source-name"><a href="https://github.com/Tencent/WeKnora" target="_blank" class="news-link">Tencent / WeKnora</a></span><span class="rank-num top">Star: 13684</span><span class="time-info">Fork: 1598</span><span class="count-info">Today stars: 26</span>
+                        </div>
+                        <div class="news-title">LLM-powered framework for deep document understanding, semantic retrieval, and context-aware answers using RAG paradigm.
+                        </div>
+                    </div>
+                </div>
+            </div>
+            </div>
+
+            <div class="footer">
+                <div class="footer-content">
+                    由 <span class="project-name">TrendRadar</span> 生成 · 
+                    <a href="https://github.com/sansan0/TrendRadar" target="_blank" class="footer-link">
+                        GitHub 开源项目
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <script>
+            async function saveAsImage() {
+                const button = event.target;
+                const originalText = button.textContent;
+
+                try {
+                    button.textContent = '生成中...';
+                    button.disabled = true;
+                    window.scrollTo(0, 0);
+
+                    // 等待页面稳定
+                    await new Promise(resolve => setTimeout(resolve, 200));
+
+                    // 截图前隐藏按钮
+                    const buttons = document.querySelector('.save-buttons');
+                    buttons.style.visibility = 'hidden';
+
+                    // 再次等待确保按钮完全隐藏
+                    await new Promise(resolve => setTimeout(resolve, 100));
+
+                    const container = document.querySelector('.container');
+
+                    const canvas = await html2canvas(container, {
+                        backgroundColor: '#ffffff',
+                        scale: 1.5,
+                        useCORS: true,
+                        allowTaint: false,
+                        imageTimeout: 10000,
+                        removeContainer: false,
+                        foreignObjectRendering: false,
+                        logging: false,
+                        width: container.offsetWidth,
+                        height: container.offsetHeight,
+                        x: 0,
+                        y: 0,
+                        scrollX: 0,
+                        scrollY: 0,
+                        windowWidth: window.innerWidth,
+                        windowHeight: window.innerHeight
+                    });
+
+                    buttons.style.visibility = 'visible';
+
+                    const link = document.createElement('a');
+                    const now = new Date();
+                    const filename = `TrendRadar_热点新闻分析_${now.getFullYear()}${String(now.getMonth() + 1).padStart(2, '0')}${String(now.getDate()).padStart(2, '0')}_${String(now.getHours()).padStart(2, '0')}${String(now.getMinutes()).padStart(2, '0')}.png`;
+
+                    link.download = filename;
+                    link.href = canvas.toDataURL('image/png', 1.0);
+
+                    // 触发下载
+                    document.body.appendChild(link);
+                    link.click();
+                    document.body.removeChild(link);
+
+                    button.textContent = '保存成功!';
+                    setTimeout(() => {
+                        button.textContent = originalText;
+                        button.disabled = false;
+                    }, 2000);
+
+                } catch (error) {
+                    const buttons = document.querySelector('.save-buttons');
+                    buttons.style.visibility = 'visible';
+                    button.textContent = '保存失败';
+                    setTimeout(() => {
+                        button.textContent = originalText;
+                        button.disabled = false;
+                    }, 2000);
+                }
+            }
+
+            async function saveAsMultipleImages() {
+                const button = event.target;
+                const originalText = button.textContent;
+                const container = document.querySelector('.container');
+                const scale = 1.5; 
+                const maxHeight = 5000 / scale;
+
+                try {
+                    button.textContent = '分析中...';
+                    button.disabled = true;
+
+                    // 获取所有可能的分割元素
+                    const newsItems = Array.from(container.querySelectorAll('.news-item'));
+                    const wordGroups = Array.from(container.querySelectorAll('.word-group'));
+                    const newSection = container.querySelector('.new-section');
+                    const errorSection = container.querySelector('.error-section');
+                    const header = container.querySelector('.header');
+                    const footer = container.querySelector('.footer');
+
+                    // 计算元素位置和高度
+                    const containerRect = container.getBoundingClientRect();
+                    const elements = [];
+
+                    // 添加header作为必须包含的元素
+                    elements.push({
+                        type: 'header',
+                        element: header,
+                        top: 0,
+                        bottom: header.offsetHeight,
+                        height: header.offsetHeight
+                    });
+
+                    // 添加错误信息（如果存在）
+                    if (errorSection) {
+                        const rect = errorSection.getBoundingClientRect();
+                        elements.push({
+                            type: 'error',
+                            element: errorSection,
+                            top: rect.top - containerRect.top,
+                            bottom: rect.bottom - containerRect.top,
+                            height: rect.height
+                        });
+                    }
+
+                    // 按word-group分组处理news-item
+                    wordGroups.forEach(group => {
+                        const groupRect = group.getBoundingClientRect();
+                        const groupNewsItems = group.querySelectorAll('.news-item');
+
+                        // 添加word-group的header部分
+                        const wordHeader = group.querySelector('.word-header');
+                        if (wordHeader) {
+                            const headerRect = wordHeader.getBoundingClientRect();
+                            elements.push({
+                                type: 'word-header',
+                                element: wordHeader,
+                                parent: group,
+                                top: groupRect.top - containerRect.top,
+                                bottom: headerRect.bottom - containerRect.top,
+                                height: headerRect.height
+                            });
+                        }
+
+                        // 添加每个news-item
+                        groupNewsItems.forEach(item => {
+                            const rect = item.getBoundingClientRect();
+                            elements.push({
+                                type: 'news-item',
+                                element: item,
+                                parent: group,
+                                top: rect.top - containerRect.top,
+                                bottom: rect.bottom - containerRect.top,
+                                height: rect.height
+                            });
+                        });
+                    });
+
+                    // 添加新增新闻部分
+                    if (newSection) {
+                        const rect = newSection.getBoundingClientRect();
+                        elements.push({
+                            type: 'new-section',
+                            element: newSection,
+                            top: rect.top - containerRect.top,
+                            bottom: rect.bottom - containerRect.top,
+                            height: rect.height
+                        });
+                    }
+
+                    // 添加footer
+                    const footerRect = footer.getBoundingClientRect();
+                    elements.push({
+                        type: 'footer',
+                        element: footer,
+                        top: footerRect.top - containerRect.top,
+                        bottom: footerRect.bottom - containerRect.top,
+                        height: footer.offsetHeight
+                    });
+
+                    // 计算分割点
+                    const segments = [];
+                    let currentSegment = { start: 0, end: 0, height: 0, includeHeader: true };
+                    let headerHeight = header.offsetHeight;
+                    currentSegment.height = headerHeight;
+
+                    for (let i = 1; i < elements.length; i++) {
+                        const element = elements[i];
+                        const potentialHeight = element.bottom - currentSegment.start;
+
+                        // 检查是否需要创建新分段
+                        if (potentialHeight > maxHeight && currentSegment.height > headerHeight) {
+                            // 在前一个元素结束处分割
+                            currentSegment.end = elements[i - 1].bottom;
+                            segments.push(currentSegment);
+
+                            // 开始新分段
+                            currentSegment = {
+                                start: currentSegment.end,
+                                end: 0,
+                                height: element.bottom - currentSegment.end,
+                                includeHeader: false
+                            };
+                        } else {
+                            currentSegment.height = potentialHeight;
+                            currentSegment.end = element.bottom;
+                        }
+                    }
+
+                    // 添加最后一个分段
+                    if (currentSegment.height > 0) {
+                        currentSegment.end = container.offsetHeight;
+                        segments.push(currentSegment);
+                    }
+
+                    button.textContent = `生成中 (0/${segments.length})...`;
+
+                    // 隐藏保存按钮
+                    const buttons = document.querySelector('.save-buttons');
+                    buttons.style.visibility = 'hidden';
+
+                    // 为每个分段生成图片
+                    const images = [];
+                    for (let i = 0; i < segments.length; i++) {
+                        const segment = segments[i];
+                        button.textContent = `生成中 (${i + 1}/${segments.length})...`;
+
+                        // 创建临时容器用于截图
+                        const tempContainer = document.createElement('div');
+                        tempContainer.style.cssText = `
+                            position: absolute;
+                            left: -9999px;
+                            top: 0;
+                            width: ${container.offsetWidth}px;
+                            background: white;
+                        `;
+                        tempContainer.className = 'container';
+
+                        // 克隆容器内容
+                        const clonedContainer = container.cloneNode(true);
+
+                        // 移除克隆内容中的保存按钮
+                        const clonedButtons = clonedContainer.querySelector('.save-buttons');
+                        if (clonedButtons) {
+                            clonedButtons.style.display = 'none';
+                        }
+
+                        tempContainer.appendChild(clonedContainer);
+                        document.body.appendChild(tempContainer);
+
+                        // 等待DOM更新
+                        await new Promise(resolve => setTimeout(resolve, 100));
+
+                        // 使用html2canvas截取特定区域
+                        const canvas = await html2canvas(clonedContainer, {
+                            backgroundColor: '#ffffff',
+                            scale: scale,
+                            useCORS: true,
+                            allowTaint: false,
+                            imageTimeout: 10000,
+                            logging: false,
+                            width: container.offsetWidth,
+                            height: segment.end - segment.start,
+                            x: 0,
+                            y: segment.start,
+                            windowWidth: window.innerWidth,
+                            windowHeight: window.innerHeight
+                        });
+
+                        images.push(canvas.toDataURL('image/png', 1.0));
+
+                        // 清理临时容器
+                        document.body.removeChild(tempContainer);
+                    }
+
+                    // 恢复按钮显示
+                    buttons.style.visibility = 'visible';
+
+                    // 下载所有图片
+                    const now = new Date();
+                    const baseFilename = `TrendRadar_热点新闻分析_${now.getFullYear()}${String(now.getMonth() + 1).padStart(2, '0')}${String(now.getDate()).padStart(2, '0')}_${String(now.getHours()).padStart(2, '0')}${String(now.getMinutes()).padStart(2, '0')}`;
+
+                    for (let i = 0; i < images.length; i++) {
+                        const link = document.createElement('a');
+                        link.download = `${baseFilename}_part${i + 1}.png`;
+                        link.href = images[i];
+                        document.body.appendChild(link);
+                        link.click();
+                        document.body.removeChild(link);
+
+                        // 延迟一下避免浏览器阻止多个下载
+                        await new Promise(resolve => setTimeout(resolve, 100));
+                    }
+
+                    button.textContent = `已保存 ${segments.length} 张图片!`;
+                    setTimeout(() => {
+                        button.textContent = originalText;
+                        button.disabled = false;
+                    }, 2000);
+
+                } catch (error) {
+                    console.error('分段保存失败:', error);
+                    const buttons = document.querySelector('.save-buttons');
+                    buttons.style.visibility = 'visible';
+                    button.textContent = '保存失败';
+                    setTimeout(() => {
+                        button.textContent = originalText;
+                        button.disabled = false;
+                    }, 2000);
+                }
+            }
+
+            document.addEventListener('DOMContentLoaded', function() {
+                window.scrollTo(0, 0);
+            });
+        </script>
+    </body>
+    </html>
+    
