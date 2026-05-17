@@ -5,7 +5,7 @@ name: Daily Github-Trending
 
 on:
   schedule:
-    - cron: "0 2 * * *"
+    - cron: "0 1 * * *"
   workflow_dispatch: # Manually running a workflow
 
 # 添加权限设置

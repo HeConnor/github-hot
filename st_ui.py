@@ -1,7 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 # @Time    : 2025/11/12
-# @USER    : Shengji He
 # @File    : st_ui.py
 # @Software: PyCharm
 # @Version  : Python-

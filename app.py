@@ -1,7 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 # @Time    : 2025/11/13
-# @USER    : Shengji He
 # @File    : app.py
 # @Software: PyCharm
 # @Version  : Python-
