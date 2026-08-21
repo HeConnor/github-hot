@@ -1,0 +1,1439 @@
+
+    <!DOCTYPE html>
+    <html>
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Github Trending</title>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js" integrity="sha512-BNaRQnYJYiPSqHHDb58B0yaPfCu+Wgds8Gp/gU33kqBtgNS4tSPHuGibyoeqMV/TJlSKda6FXzoEyYGjTe+vXA==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+        <style>
+            * { box-sizing: border-box; }
+            body { 
+                font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+                margin: 0; 
+                padding: 16px; 
+                background: #fafafa;
+                color: #333;
+                line-height: 1.5;
+            }
+
+            .container {
+                max-width: 600px;
+                margin: 0 auto;
+                background: white;
+                border-radius: 12px;
+                overflow: hidden;
+                box-shadow: 0 2px 16px rgba(0,0,0,0.06);
+            }
+
+            .header {
+                background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%);
+                color: white;
+                padding: 32px 24px;
+                text-align: center;
+                position: relative;
+            }
+
+            .save-buttons {
+                position: absolute;
+                top: 16px;
+                right: 16px;
+                display: flex;
+                gap: 8px;
+            }
+
+            .save-btn {
+                background: rgba(255, 255, 255, 0.2);
+                border: 1px solid rgba(255, 255, 255, 0.3);
+                color: white;
+                padding: 8px 16px;
+                border-radius: 6px;
+                cursor: pointer;
+                font-size: 13px;
+                font-weight: 500;
+                transition: all 0.2s ease;
+                backdrop-filter: blur(10px);
+                white-space: nowrap;
+            }
+
+            .save-btn:hover {
+                background: rgba(255, 255, 255, 0.3);
+                border-color: rgba(255, 255, 255, 0.5);
+                transform: translateY(-1px);
+            }
+
+            .save-btn:active {
+                transform: translateY(0);
+            }
+
+            .save-btn:disabled {
+                opacity: 0.6;
+                cursor: not-allowed;
+            }
+
+            .header-title {
+                font-size: 22px;
+                font-weight: 700;
+                margin: 0 0 20px 0;
+            }
+
+            .header-info {
+                display: grid;
+                grid-template-columns: 1fr 1fr;
+                gap: 16px;
+                font-size: 14px;
+                opacity: 0.95;
+            }
+
+            .info-item {
+                text-align: center;
+            }
+
+            .info-label {
+                display: block;
+                font-size: 12px;
+                opacity: 0.8;
+                margin-bottom: 4px;
+            }
+
+            .info-value {
+                font-weight: 600;
+                font-size: 16px;
+            }
+
+            .content {
+                padding: 24px;
+            }
+
+            .word-group {
+                margin-bottom: 40px;
+            }
+
+            .word-group:first-child {
+                margin-top: 0;
+            }
+
+            .word-header {
+                display: flex;
+                align-items: center;
+                justify-content: space-between;
+                margin-bottom: 20px;
+                padding-bottom: 8px;
+                border-bottom: 1px solid #f0f0f0;
+            }
+
+            .word-info {
+                display: flex;
+                align-items: center;
+                gap: 12px;
+            }
+
+            .word-name {
+                font-size: 17px;
+                font-weight: 600;
+                color: #1a1a1a;
+            }
+
+            .word-count {
+                color: #666;
+                font-size: 13px;
+                font-weight: 500;
+            }
+
+            .word-count.hot { color: #dc2626; font-weight: 600; }
+            .word-count.warm { color: #ea580c; font-weight: 600; }
+
+            .word-index {
+                color: #999;
+                font-size: 12px;
+            }
+
+            .news-item {
+                margin-bottom: 20px;
+                padding: 16px 0;
+                border-bottom: 1px solid #f5f5f5;
+                position: relative;
+                display: flex;
+                gap: 12px;
+                align-items: center;
+            }
+
+            .news-item:last-child {
+                border-bottom: none;
+            }
+
+            .news-item.new::after {
+                content: "NEW";
+                position: absolute;
+                top: 12px;
+                right: 0;
+                background: #fbbf24;
+                color: #92400e;
+                font-size: 9px;
+                font-weight: 700;
+                padding: 3px 6px;
+                border-radius: 4px;
+                letter-spacing: 0.5px;
+            }
+
+            .news-number {
+                color: #999;
+                font-size: 13px;
+                font-weight: 600;
+                min-width: 20px;
+                text-align: center;
+                flex-shrink: 0;
+                background: #f8f9fa;
+                border-radius: 50%;
+                width: 24px;
+                height: 24px;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                align-self: flex-start;
+                margin-top: 8px;
+            }
+
+            .news-content {
+                flex: 1;
+                min-width: 0;
+                padding-right: 40px;
+            }
+
+            .news-item.new .news-content {
+                padding-right: 50px;
+            }
+
+            .news-header {
+                display: flex;
+                align-items: center;
+                gap: 8px;
+                margin-bottom: 8px;
+                flex-wrap: wrap;
+            }
+
+            .source-name {
+                color: #666;
+                font-size: 12px;
+                font-weight: 500;
+            }
+
+            .rank-num {
+                color: #fff;
+                background: #6b7280;
+                font-size: 10px;
+                font-weight: 700;
+                padding: 2px 6px;
+                border-radius: 10px;
+                min-width: 18px;
+                text-align: center;
+            }
+
+            .rank-num.top { background: #dc2626; }
+            .rank-num.high { background: #ea580c; }
+
+            .time-info {
+                color: #999;
+                font-size: 11px;
+            }
+
+            .count-info {
+                color: #059669;
+                font-size: 11px;
+                font-weight: 500;
+            }
+
+            .news-title {
+                font-size: 15px;
+                line-height: 1.4;
+                color: #1a1a1a;
+                margin: 0;
+            }
+
+            .news-link {
+                color: #2563eb;
+                text-decoration: none;
+            }
+
+            .news-link:hover {
+                text-decoration: underline;
+            }
+
+            .news-link:visited {
+                color: #7c3aed;
+            }
+
+            .new-section {
+                margin-top: 10px;   
+                padding-top: 10px;
+                border-top: 2px solid #f0f0f0;
+                margin-bottom: 40px;   
+                padding-bottom: 24px;
+                border-bottom: 2px solid #f0f0f0;
+            }
+
+            .new-section-title {
+                color: #1a1a1a;
+                font-size: 16px;
+                font-weight: 600;
+                margin: 0 0 20px 0;
+            }
+
+            .new-source-group {
+                margin-bottom: 24px;
+            }
+
+            .new-source-title {
+                color: #666;
+                font-size: 13px;
+                font-weight: 500;
+                margin: 0 0 12px 0;
+                padding-bottom: 6px;
+                border-bottom: 1px solid #f5f5f5;
+            }
+
+            .new-item {
+                display: flex;
+                align-items: center;
+                gap: 12px;
+                padding: 8px 0;
+                border-bottom: 1px solid #f9f9f9;
+            }
+
+            .new-item:last-child {
+                border-bottom: none;
+            }
+
+            .new-item-number {
+                color: #999;
+                font-size: 12px;
+                font-weight: 600;
+                min-width: 18px;
+                text-align: center;
+                flex-shrink: 0;
+                background: #f8f9fa;
+                border-radius: 50%;
+                width: 20px;
+                height: 20px;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+            }
+
+            .new-item-rank {
+                color: #fff;
+                background: #6b7280;
+                font-size: 10px;
+                font-weight: 700;
+                padding: 3px 6px;
+                border-radius: 8px;
+                min-width: 20px;
+                text-align: center;
+                flex-shrink: 0;
+            }
+
+            .new-item-rank.top { background: #dc2626; }
+            .new-item-rank.high { background: #ea580c; }
+
+            .new-item-content {
+                flex: 1;
+                min-width: 0;
+            }
+
+            .new-item-title {
+                font-size: 14px;
+                line-height: 1.4;
+                color: #1a1a1a;
+                margin: 0;
+            }
+
+            .error-section {
+                background: #fef2f2;
+                border: 1px solid #fecaca;
+                border-radius: 8px;
+                padding: 16px;
+                margin-bottom: 24px;
+            }
+
+            .error-title {
+                color: #dc2626;
+                font-size: 14px;
+                font-weight: 600;
+                margin: 0 0 8px 0;
+            }
+
+            .error-list {
+                list-style: none;
+                padding: 0;
+                margin: 0;
+            }
+
+            .error-item {
+                color: #991b1b;
+                font-size: 13px;
+                padding: 2px 0;
+                font-family: 'SF Mono', Consolas, monospace;
+            }
+
+            .footer {
+                margin-top: 32px;
+                padding: 20px 24px;
+                background: #f8f9fa;
+                border-top: 1px solid #e5e7eb;
+                text-align: center;
+            }
+
+            .footer-content {
+                font-size: 13px;
+                color: #6b7280;
+                line-height: 1.6;
+            }
+
+            .footer-link {
+                color: #4f46e5;
+                text-decoration: none;
+                font-weight: 500;
+                transition: color 0.2s ease;
+            }
+
+            .footer-link:hover {
+                color: #7c3aed;
+                text-decoration: underline;
+            }
+
+            .project-name {
+                font-weight: 600;
+                color: #374151;
+            }
+
+            @media (max-width: 480px) {
+                body { padding: 12px; }
+                .header { padding: 24px 20px; }
+                .content { padding: 20px; }
+                .footer { padding: 16px 20px; }
+                .header-info { grid-template-columns: 1fr; gap: 12px; }
+                .news-header { gap: 6px; }
+                .news-content { padding-right: 45px; }
+                .news-item { gap: 8px; }
+                .new-item { gap: 8px; }
+                .news-number { width: 20px; height: 20px; font-size: 12px; }
+                .save-buttons {
+                    position: static;
+                    margin-bottom: 16px;
+                    display: flex;
+                    gap: 8px;
+                    justify-content: center;
+                    flex-direction: column;
+                    width: 100%;
+                }
+                .save-btn {
+                    width: 100%;
+                }
+            }
+        </style>
+    </head>
+    <body>
+        <div class="container">
+            <div class="header">
+                <div class="save-buttons">
+                    <button class="save-btn" onclick="saveAsImage()">保存为图片</button>
+                    <button class="save-btn" onclick="saveAsMultipleImages()">分段保存</button>
+                </div>
+                <div class="header-title">Github Trending</div>
+                <div class="header-info">
+                    <div class="info-item">
+                        <span class="info-label">报告类型</span>
+                        <span class="info-value">当日汇总</span>
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label">总数</span>
+                        <span class="info-value">60 条</span>
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label">热点</span>
+                        <span class="info-value">10 条</span>
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label">生成时间</span>
+                        <span class="info-value">08-21 10:16</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="content">
+            <div class="word-group">
+                <div class="word-header">
+                    <div class="word-info">
+                        <div class="word-name">All</div>
+                        <div class="word-count hot">10 条</div>
+                    </div>
+                    <div class="word-index">1/6</div>
+                </div>
+                <div class="news-item ">
+                    <div class="news-number">1</div>
+                    <div class="news-content">
+                        <div class="news-header">
+                            <span class="source-name"><a href="https://github.com/harry0703/MoneyPrinterTurbo" target="_blank" class="news-link">harry0703 / MoneyPrinterTurbo</a></span><span class="rank-num top">Star: 113034</span><span class="time-info">Fork: 17127</span><span class="count-info">Today stars: 2761</span>
+                        </div>
+                        <div class="news-title">利用 AI 大模型和自动化工作流，根据主题或关键词一键生成高清短视频。Generate HD short videos from a topic or keyword with an automated AI workflow.
+                        </div>
+                    </div>
+                </div>
+                <div class="news-item ">
+                    <div class="news-number">2</div>
+                    <div class="news-content">
+                        <div class="news-header">
+                            <span class="source-name"><a href="https://github.com/mattpocock/skills" target="_blank" class="news-link">mattpocock / skills</a></span><span class="rank-num top">Star: 226706</span><span class="time-info">Fork: 19439</span><span class="count-info">Today stars: 2192</span>
+                        </div>
+                        <div class="news-title">Skills for Real Engineers. Straight from my .agents directory.
+                        </div>
+                    </div>
+                </div>
+                <div class="news-item new">
+                    <div class="news-number">3</div>
+                    <div class="news-content">
+                        <div class="news-header">
+                            <span class="source-name"><a href="https://github.com/AprilNEA/OpenLogi" target="_blank" class="news-link">AprilNEA / OpenLogi</a></span><span class="rank-num top">Star: 11956</span><span class="time-info">Fork: 325</span><span class="count-info">Today stars: 1545</span>
+                        </div>
+                        <div class="news-title">⚡️A native, local-first alternative to Logitech Options+, written in Rust 🦀 — remap buttons, DPI, and SmartShift over HID++. No account, no telemetry.
+                        </div>
+                    </div>
+                </div>
+                <div class="news-item ">
+                    <div class="news-number">4</div>
+                    <div class="news-content">
+                        <div class="news-header">
+                            <span class="source-name"><a href="https://github.com/volcengine/OpenViking" target="_blank" class="news-link">volcengine / OpenViking</a></span><span class="rank-num top">Star: 31062</span><span class="time-info">Fork: 2397</span><span class="count-info">Today stars: 950</span>
+                        </div>
+                        <div class="news-title">Self-evolving Context Database for AI Agents. Unify Agent Memory, Knowledge RAG and Skills.
+                        </div>
+                    </div>
+                </div>
+                <div class="news-item ">
+                    <div class="news-number">5</div>
+                    <div class="news-content">
+                        <div class="news-header">
+                            <span class="source-name"><a href="https://github.com/santifer/career-ops" target="_blank" class="news-link">santifer / career-ops</a></span><span class="rank-num top">Star: 66748</span><span class="time-info">Fork: 12825</span><span class="count-info">Today stars: 816</span>
+                        </div>
+                        <div class="news-title">Open-source AI job search: scan job portals, evaluate listings with a structured A-F rubric into a 1.0-5.0 score, tailor your CV, track applications — runs locally in your AI coding CLI (Claude Code, Codex, OpenCode, Antigravity…)
+                        </div>
+                    </div>
+                </div>
+                <div class="news-item ">
+                    <div class="news-number">6</div>
+                    <div class="news-content">
+                        <div class="news-header">
+                            <span class="source-name"><a href="https://github.com/obra/superpowers" target="_blank" class="news-link">obra / superpowers</a></span><span class="rank-num top">Star: 274985</span><span class="time-info">Fork: 24611</span><span class="count-info">Today stars: 727</span>
+                        </div>
+                        <div class="news-title">An agentic skills framework &amp; software development methodology that works.
+                        </div>
+                    </div>
+                </div>
+                <div class="news-item new">
+                    <div class="news-number">7</div>
+                    <div class="news-content">
+                        <div class="news-header">
+                            <span class="source-name"><a href="https://github.com/mahlernim/google-timeline-visualizer" target="_blank" class="news-link">mahlernim / google-timeline-visualizer</a></span><span class="rank-num ">Star: 1634</span><span class="time-info">Fork: 177</span><span class="count-info">Today stars: 657</span>
+                        </div>
+                        <div class="news-title">Visualize your year in travel using your Google Location History (Timeline) data
+                        </div>
+                    </div>
+                </div>
+                <div class="news-item ">
+                    <div class="news-number">8</div>
+                    <div class="news-content">
+                        <div class="news-header">
+                            <span class="source-name"><a href="https://github.com/chaitanyagiri/munder-difflin" target="_blank" class="news-link">chaitanyagiri / munder-difflin</a></span><span class="rank-num ">Star: 3142</span><span class="time-info">Fork: 351</span><span class="count-info">Today stars: 507</span>
+                        </div>
+                        <div class="news-title">local multi-agent harness
+                        </div>
+                    </div>
+                </div>
+                <div class="news-item new">
+                    <div class="news-number">9</div>
+                    <div class="news-content">
+                        <div class="news-header">
+                            <span class="source-name"><a href="https://github.com/cursor/plugins" target="_blank" class="news-link">cursor / plugins</a></span><span class="rank-num ">Star: 4106</span><span class="time-info">Fork: 341</span><span class="count-info">Today stars: 449</span>
+                        </div>
+                        <div class="news-title">Cursor plugin specification and official plugins
+                        </div>
+                    </div>
+                </div>
+                <div class="news-item ">
+                    <div class="news-number">10</div>
+                    <div class="news-content">
+                        <div class="news-header">
+                            <span class="source-name"><a href="https://github.com/akitaonrails/ai-memory" target="_blank" class="news-link">akitaonrails / ai-memory</a></span><span class="rank-num ">Star: 3651</span><span class="time-info">Fork: 280</span><span class="count-info">Today stars: 332</span>
+                        </div>
+                        <div class="news-title">Solution for long term memory for agent coding CLIs and to facilitate handoff between different agent vendors
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="word-group">
+                <div class="word-header">
+                    <div class="word-info">
+                        <div class="word-name">Python</div>
+                        <div class="word-count hot">10 条</div>
+                    </div>
+                    <div class="word-index">2/6</div>
+                </div>
+                <div class="news-item ">
+                    <div class="news-number">1</div>
+                    <div class="news-content">
+                        <div class="news-header">
+                            <span class="source-name"><a href="https://github.com/harry0703/MoneyPrinterTurbo" target="_blank" class="news-link">harry0703 / MoneyPrinterTurbo</a></span><span class="rank-num top">Star: 113034</span><span class="time-info">Fork: 17127</span><span class="count-info">Today stars: 2761</span>
+                        </div>
+                        <div class="news-title">利用 AI 大模型和自动化工作流，根据主题或关键词一键生成高清短视频。Generate HD short videos from a topic or keyword with an automated AI workflow.
+                        </div>
+                    </div>
+                </div>
+                <div class="news-item ">
+                    <div class="news-number">2</div>
+                    <div class="news-content">
+                        <div class="news-header">
+                            <span class="source-name"><a href="https://github.com/volcengine/OpenViking" target="_blank" class="news-link">volcengine / OpenViking</a></span><span class="rank-num top">Star: 31062</span><span class="time-info">Fork: 2397</span><span class="count-info">Today stars: 950</span>
+                        </div>
+                        <div class="news-title">Self-evolving Context Database for AI Agents. Unify Agent Memory, Knowledge RAG and Skills.
+                        </div>
+                    </div>
+                </div>
+                <div class="news-item ">
+                    <div class="news-number">3</div>
+                    <div class="news-content">
+                        <div class="news-header">
+                            <span class="source-name"><a href="https://github.com/mukul975/Anthropic-Cybersecurity-Skills" target="_blank" class="news-link">mukul975 / Anthropic-Cybersecurity-Skills</a></span><span class="rank-num top">Star: 30381</span><span class="time-info">Fork: 3612</span><span class="count-info">Today stars: 632</span>
+                        </div>
+                        <div class="news-title">817 structured cybersecurity skills for AI agents · Mapped to 6 frameworks: MITRE ATT&amp;CK, NIST CSF 2.0, MITRE ATLAS, D3FEND, NIST AI RMF &amp; MITRE F3 (Fight Fraud) · agentskills.io standard · Works with Claude Code, GitHub Copilot, Codex CLI, Cursor, Gemini CLI &amp; 20+ platforms · 29 security domains · Apache 2.0
+                        </div>
+                    </div>
+                </div>
+                <div class="news-item new">
+                    <div class="news-number">4</div>
+                    <div class="news-content">
+                        <div class="news-header">
+                            <span class="source-name"><a href="https://github.com/marceloprates/prettymaps" target="_blank" class="news-link">marceloprates / prettymaps</a></span><span class="rank-num top">Star: 13462</span><span class="time-info">Fork: 670</span><span class="count-info">Today stars: 551</span>
+                        </div>
+                        <div class="news-title">Draw pretty maps from OpenStreetMap data! Built with osmnx +matplotlib + shapely
+                        </div>
+                    </div>
+                </div>
+                <div class="news-item ">
+                    <div class="news-number">5</div>
+                    <div class="news-content">
+                        <div class="news-header">
+                            <span class="source-name"><a href="https://github.com/usestrix/strix" target="_blank" class="news-link">usestrix / strix</a></span><span class="rank-num top">Star: 56247</span><span class="time-info">Fork: 6048</span><span class="count-info">Today stars: 532</span>
+                        </div>
+                        <div class="news-title">Open-source AI penetration testing tool to find and fix your app’s vulnerabilities.
+                        </div>
+                    </div>
+                </div>
+                <div class="news-item ">
+                    <div class="news-number">6</div>
+                    <div class="news-content">
+                        <div class="news-header">
+                            <span class="source-name"><a href="https://github.com/jundot/omlx" target="_blank" class="news-link">jundot / omlx</a></span><span class="rank-num top">Star: 20120</span><span class="time-info">Fork: 1710</span><span class="count-info">Today stars: 332</span>
+                        </div>
+                        <div class="news-title">LLM inference server with continuous batching &amp; SSD caching for Apple Silicon — managed from the macOS menu bar
+                        </div>
+                    </div>
+                </div>
+                <div class="news-item ">
+                    <div class="news-number">7</div>
+                    <div class="news-content">
+                        <div class="news-header">
+                            <span class="source-name"><a href="https://github.com/yt-dlp/yt-dlp" target="_blank" class="news-link">yt-dlp / yt-dlp</a></span><span class="rank-num top">Star: 185896</span><span class="time-info">Fork: 16023</span><span class="count-info">Today stars: 258</span>
+                        </div>
+                        <div class="news-title">A feature-rich command-line audio/video downloader
+                        </div>
+                    </div>
+                </div>
+                <div class="news-item new">
+                    <div class="news-number">8</div>
+                    <div class="news-content">
+                        <div class="news-header">
+                            <span class="source-name"><a href="https://github.com/Osmantic/ODS" target="_blank" class="news-link">Osmantic / ODS</a></span><span class="rank-num ">Star: 4596</span><span class="time-info">Fork: 690</span><span class="count-info">Today stars: 162</span>
+                        </div>
+                        <div class="news-title">Turn your PC, Mac, or Linux box into an AI server. LLM inference, chat UI, voice, agents, workflows, RAG, and image generation.
+                        </div>
+                    </div>
+                </div>
+                <div class="news-item new">
+                    <div class="news-number">9</div>
+                    <div class="news-content">
+                        <div class="news-header">
+                            <span class="source-name"><a href="https://github.com/anthropics/claude-code" target="_blank" class="news-link">anthropics / claude-code</a></span><span class="rank-num top">Star: 142160</span><span class="time-info">Fork: 22800</span><span class="count-info">Today stars: 153</span>
+                        </div>
+                        <div class="news-title">Claude Code is an agentic coding tool that lives in your terminal, understands your codebase, and helps you code faster by executing routine tasks, explaining complex code, and handling git workflows - all through natural language commands.
+                        </div>
+                    </div>
+                </div>
+                <div class="news-item new">
+                    <div class="news-number">10</div>
+                    <div class="news-content">
+                        <div class="news-header">
+                            <span class="source-name"><a href="https://github.com/browser-use/browser-use" target="_blank" class="news-link">browser-use / browser-use</a></span><span class="rank-num top">Star: 109895</span><span class="time-info">Fork: 12083</span><span class="count-info">Today stars: 137</span>
+                        </div>
+                        <div class="news-title">🌐 Make websites accessible for AI agents. Automate tasks online with ease.
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="word-group">
+                <div class="word-header">
+                    <div class="word-info">
+                        <div class="word-name">Jupyter-notebook</div>
+                        <div class="word-count hot">10 条</div>
+                    </div>
+                    <div class="word-index">3/6</div>
+                </div>
+                <div class="news-item ">
+                    <div class="news-number">1</div>
+                    <div class="news-content">
+                        <div class="news-header">
+                            <span class="source-name"><a href="https://github.com/microsoft/AI-For-Beginners" target="_blank" class="news-link">microsoft / AI-For-Beginners</a></span><span class="rank-num top">Star: 65932</span><span class="time-info">Fork: 12772</span><span class="count-info">Today stars: 242</span>
+                        </div>
+                        <div class="news-title">12 Weeks, 24 Lessons, AI for All!
+                        </div>
+                    </div>
+                </div>
+                <div class="news-item ">
+                    <div class="news-number">2</div>
+                    <div class="news-content">
+                        <div class="news-header">
+                            <span class="source-name"><a href="https://github.com/microsoft/ai-agents-for-beginners" target="_blank" class="news-link">microsoft / ai-agents-for-beginners</a></span><span class="rank-num top">Star: 72900</span><span class="time-info">Fork: 24099</span><span class="count-info">Today stars: 169</span>
+                        </div>
+                        <div class="news-title">18 Lessons to Get Started Building AI Agents
+                        </div>
+                    </div>
+                </div>
+                <div class="news-item new">
+                    <div class="news-number">3</div>
+                    <div class="news-content">
+                        <div class="news-header">
+                            <span class="source-name"><a href="https://github.com/microsoft/generative-ai-for-beginners" target="_blank" class="news-link">microsoft / generative-ai-for-beginners</a></span><span class="rank-num top">Star: 118226</span><span class="time-info">Fork: 62323</span><span class="count-info">Today stars: 119</span>
+                        </div>
+                        <div class="news-title">21 Lessons, Get Started Building with Generative AI
+                        </div>
+                    </div>
+                </div>
+                <div class="news-item new">
+                    <div class="news-number">4</div>
+                    <div class="news-content">
+                        <div class="news-header">
+                            <span class="source-name"><a href="https://github.com/HandsOnLLM/Hands-On-Large-Language-Models" target="_blank" class="news-link">HandsOnLLM / Hands-On-Large-Language-Models</a></span><span class="rank-num top">Star: 28416</span><span class="time-info">Fork: 6546</span><span class="count-info">Today stars: 115</span>
+                        </div>
+                        <div class="news-title">Official code repo for the O&#x27;Reilly Book - &quot;Hands-On Large Language Models&quot;
+                        </div>
+                    </div>
+                </div>
+                <div class="news-item ">
+                    <div class="news-number">5</div>
+                    <div class="news-content">
+                        <div class="news-header">
+                            <span class="source-name"><a href="https://github.com/selfteaching/the-craft-of-selfteaching" target="_blank" class="news-link">selfteaching / the-craft-of-selfteaching</a></span><span class="rank-num top">Star: 16650</span><span class="time-info">Fork: 17598</span><span class="count-info">Today stars: 95</span>
+                        </div>
+                        <div class="news-title">One has no future if one couldn&#x27;t teach themself.
+                        </div>
+                    </div>
+                </div>
+                <div class="news-item ">
+                    <div class="news-number">6</div>
+                    <div class="news-content">
+                        <div class="news-header">
+                            <span class="source-name"><a href="https://github.com/microsoft/ML-For-Beginners" target="_blank" class="news-link">microsoft / ML-For-Beginners</a></span><span class="rank-num top">Star: 89631</span><span class="time-info">Fork: 22010</span><span class="count-info">Today stars: 85</span>
+                        </div>
+                        <div class="news-title">12 weeks, 26 lessons, 52 quizzes, classic Machine Learning for all
+                        </div>
+                    </div>
+                </div>
+                <div class="news-item ">
+                    <div class="news-number">7</div>
+                    <div class="news-content">
+                        <div class="news-header">
+                            <span class="source-name"><a href="https://github.com/jackfrued/Python-100-Days" target="_blank" class="news-link">jackfrued / Python-100-Days</a></span><span class="rank-num top">Star: 185455</span><span class="time-info">Fork: 55695</span><span class="count-info">Today stars: 84</span>
+                        </div>
+                        <div class="news-title">Python - 100天从新手到大师
+                        </div>
+                    </div>
+                </div>
+                <div class="news-item ">
+                    <div class="news-number">8</div>
+                    <div class="news-content">
+                        <div class="news-header">
+                            <span class="source-name"><a href="https://github.com/openai/openai-cookbook" target="_blank" class="news-link">openai / openai-cookbook</a></span><span class="rank-num top">Star: 75419</span><span class="time-info">Fork: 12747</span><span class="count-info">Today stars: 58</span>
+                        </div>
+                        <div class="news-title">Examples and guides for using the OpenAI API
+                        </div>
+                    </div>
+                </div>
+                <div class="news-item new">
+                    <div class="news-number">9</div>
+                    <div class="news-content">
+                        <div class="news-header">
+                            <span class="source-name"><a href="https://github.com/NirDiamant/GenAI_Agents" target="_blank" class="news-link">NirDiamant / GenAI_Agents</a></span><span class="rank-num top">Star: 23908</span><span class="time-info">Fork: 4017</span><span class="count-info">Today stars: 28</span>
+                        </div>
+                        <div class="news-title">50+ tutorials and implementations for Generative AI Agent techniques, from basic conversational bots to complex multi-agent systems.
+                        </div>
+                    </div>
+                </div>
+                <div class="news-item new">
+                    <div class="news-number">10</div>
+                    <div class="news-content">
+                        <div class="news-header">
+                            <span class="source-name"><a href="https://github.com/facebookresearch/segment-anything" target="_blank" class="news-link">facebookresearch / segment-anything</a></span><span class="rank-num top">Star: 54734</span><span class="time-info">Fork: 6351</span><span class="count-info">Today stars: 26</span>
+                        </div>
+                        <div class="news-title">The repository provides code for running inference with the SegmentAnything Model (SAM), links for downloading the trained model checkpoints, and example notebooks that show how to use the model.
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="word-group">
+                <div class="word-header">
+                    <div class="word-info">
+                        <div class="word-name">C++</div>
+                        <div class="word-count hot">10 条</div>
+                    </div>
+                    <div class="word-index">4/6</div>
+                </div>
+                <div class="news-item ">
+                    <div class="news-number">1</div>
+                    <div class="news-content">
+                        <div class="news-header">
+                            <span class="source-name"><a href="https://github.com/duckdb/duckdb" target="_blank" class="news-link">duckdb / duckdb</a></span><span class="rank-num top">Star: 40479</span><span class="time-info">Fork: 3589</span><span class="count-info">Today stars: 33</span>
+                        </div>
+                        <div class="news-title">DuckDB is an analytical in-process SQL database management system
+                        </div>
+                    </div>
+                </div>
+                <div class="news-item ">
+                    <div class="news-number">2</div>
+                    <div class="news-content">
+                        <div class="news-header">
+                            <span class="source-name"><a href="https://github.com/ocornut/imgui" target="_blank" class="news-link">ocornut / imgui</a></span><span class="rank-num top">Star: 75759</span><span class="time-info">Fork: 12019</span><span class="count-info">Today stars: 23</span>
+                        </div>
+                        <div class="news-title">Dear ImGui: Bloat-free Graphical User interface for C++ with minimal dependencies
+                        </div>
+                    </div>
+                </div>
+                <div class="news-item ">
+                    <div class="news-number">3</div>
+                    <div class="news-content">
+                        <div class="news-header">
+                            <span class="source-name"><a href="https://github.com/shadps4-emu/shadPS4" target="_blank" class="news-link">shadps4-emu / shadPS4</a></span><span class="rank-num top">Star: 32587</span><span class="time-info">Fork: 2449</span><span class="count-info">Today stars: 20</span>
+                        </div>
+                        <div class="news-title">PlayStation 4 emulator for Windows, Linux, macOS and FreeBSD written in C++
+                        </div>
+                    </div>
+                </div>
+                <div class="news-item new">
+                    <div class="news-number">4</div>
+                    <div class="news-content">
+                        <div class="news-header">
+                            <span class="source-name"><a href="https://github.com/opencv/opencv" target="_blank" class="news-link">opencv / opencv</a></span><span class="rank-num top">Star: 90527</span><span class="time-info">Fork: 56971</span><span class="count-info">Today stars: 19</span>
+                        </div>
+                        <div class="news-title">Open Source Computer Vision Library
+                        </div>
+                    </div>
+                </div>
+                <div class="news-item new">
+                    <div class="news-number">5</div>
+                    <div class="news-content">
+                        <div class="news-header">
+                            <span class="source-name"><a href="https://github.com/google/flatbuffers" target="_blank" class="news-link">google / flatbuffers</a></span><span class="rank-num top">Star: 26364</span><span class="time-info">Fork: 3624</span><span class="count-info">Today stars: 17</span>
+                        </div>
+                        <div class="news-title">FlatBuffers: Memory Efficient Serialization Library
+                        </div>
+                    </div>
+                </div>
+                <div class="news-item new">
+                    <div class="news-number">6</div>
+                    <div class="news-content">
+                        <div class="news-header">
+                            <span class="source-name"><a href="https://github.com/microsoft/WSL" target="_blank" class="news-link">microsoft / WSL</a></span><span class="rank-num top">Star: 33462</span><span class="time-info">Fork: 1807</span><span class="count-info">Today stars: 14</span>
+                        </div>
+                        <div class="news-title">Windows Subsystem for Linux
+                        </div>
+                    </div>
+                </div>
+                <div class="news-item ">
+                    <div class="news-number">7</div>
+                    <div class="news-content">
+                        <div class="news-header">
+                            <span class="source-name"><a href="https://github.com/nlohmann/json" target="_blank" class="news-link">nlohmann / json</a></span><span class="rank-num top">Star: 50413</span><span class="time-info">Fork: 7468</span><span class="count-info">Today stars: 10</span>
+                        </div>
+                        <div class="news-title">JSON for Modern C++
+                        </div>
+                    </div>
+                </div>
+                <div class="news-item new">
+                    <div class="news-number">8</div>
+                    <div class="news-content">
+                        <div class="news-header">
+                            <span class="source-name"><a href="https://github.com/gabime/spdlog" target="_blank" class="news-link">gabime / spdlog</a></span><span class="rank-num top">Star: 29508</span><span class="time-info">Fork: 5390</span><span class="count-info">Today stars: 10</span>
+                        </div>
+                        <div class="news-title">Fast C++ logging library.
+                        </div>
+                    </div>
+                </div>
+                <div class="news-item new">
+                    <div class="news-number">9</div>
+                    <div class="news-content">
+                        <div class="news-header">
+                            <span class="source-name"><a href="https://github.com/flyinghead/flycast" target="_blank" class="news-link">flyinghead / flycast</a></span><span class="rank-num ">Star: 2470</span><span class="time-info">Fork: 312</span><span class="count-info">Today stars: 10</span>
+                        </div>
+                        <div class="news-title">Flycast is a multiplatform Sega Dreamcast, Naomi, Naomi 2 and Atomiswave emulator
+                        </div>
+                    </div>
+                </div>
+                <div class="news-item new">
+                    <div class="news-number">10</div>
+                    <div class="news-content">
+                        <div class="news-header">
+                            <span class="source-name"><a href="https://github.com/protocolbuffers/protobuf" target="_blank" class="news-link">protocolbuffers / protobuf</a></span><span class="rank-num top">Star: 71749</span><span class="time-info">Fork: 16234</span><span class="count-info">Today stars: 9</span>
+                        </div>
+                        <div class="news-title">Protocol Buffers - Google&#x27;s data interchange format
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="word-group">
+                <div class="word-header">
+                    <div class="word-info">
+                        <div class="word-name">Rust</div>
+                        <div class="word-count hot">10 条</div>
+                    </div>
+                    <div class="word-index">5/6</div>
+                </div>
+                <div class="news-item ">
+                    <div class="news-number">1</div>
+                    <div class="news-content">
+                        <div class="news-header">
+                            <span class="source-name"><a href="https://github.com/AprilNEA/OpenLogi" target="_blank" class="news-link">AprilNEA / OpenLogi</a></span><span class="rank-num top">Star: 11956</span><span class="time-info">Fork: 325</span><span class="count-info">Today stars: 1545</span>
+                        </div>
+                        <div class="news-title">⚡️A native, local-first alternative to Logitech Options+, written in Rust 🦀 — remap buttons, DPI, and SmartShift over HID++. No account, no telemetry.
+                        </div>
+                    </div>
+                </div>
+                <div class="news-item ">
+                    <div class="news-number">2</div>
+                    <div class="news-content">
+                        <div class="news-header">
+                            <span class="source-name"><a href="https://github.com/amadeusprotocol/node" target="_blank" class="news-link">amadeusprotocol / node</a></span><span class="rank-num ">Star: 5124</span><span class="time-info">Fork: 93</span><span class="count-info">Today stars: 817</span>
+                        </div>
+                        <div class="news-title">
+                        </div>
+                    </div>
+                </div>
+                <div class="news-item ">
+                    <div class="news-number">3</div>
+                    <div class="news-content">
+                        <div class="news-header">
+                            <span class="source-name"><a href="https://github.com/nautechsystems/nautilus_trader" target="_blank" class="news-link">nautechsystems / nautilus_trader</a></span><span class="rank-num top">Star: 26720</span><span class="time-info">Fork: 3451</span><span class="count-info">Today stars: 357</span>
+                        </div>
+                        <div class="news-title">Production-grade Rust-native trading engine with deterministic event-driven architecture
+                        </div>
+                    </div>
+                </div>
+                <div class="news-item ">
+                    <div class="news-number">4</div>
+                    <div class="news-content">
+                        <div class="news-header">
+                            <span class="source-name"><a href="https://github.com/akitaonrails/ai-memory" target="_blank" class="news-link">akitaonrails / ai-memory</a></span><span class="rank-num ">Star: 3651</span><span class="time-info">Fork: 280</span><span class="count-info">Today stars: 332</span>
+                        </div>
+                        <div class="news-title">Solution for long term memory for agent coding CLIs and to facilitate handoff between different agent vendors
+                        </div>
+                    </div>
+                </div>
+                <div class="news-item ">
+                    <div class="news-number">5</div>
+                    <div class="news-content">
+                        <div class="news-header">
+                            <span class="source-name"><a href="https://github.com/AlexsJones/llmfit" target="_blank" class="news-link">AlexsJones / llmfit</a></span><span class="rank-num top">Star: 33292</span><span class="time-info">Fork: 2063</span><span class="count-info">Today stars: 310</span>
+                        </div>
+                        <div class="news-title">Hundreds of models &amp; providers. One command to find what runs on your hardware.
+                        </div>
+                    </div>
+                </div>
+                <div class="news-item ">
+                    <div class="news-number">6</div>
+                    <div class="news-content">
+                        <div class="news-header">
+                            <span class="source-name"><a href="https://github.com/RyanCodrai/turbovec" target="_blank" class="news-link">RyanCodrai / turbovec</a></span><span class="rank-num top">Star: 15968</span><span class="time-info">Fork: 1388</span><span class="count-info">Today stars: 230</span>
+                        </div>
+                        <div class="news-title">A vector index built on TurboQuant, written in Rust with Python bindings
+                        </div>
+                    </div>
+                </div>
+                <div class="news-item new">
+                    <div class="news-number">7</div>
+                    <div class="news-content">
+                        <div class="news-header">
+                            <span class="source-name"><a href="https://github.com/rtk-ai/rtk" target="_blank" class="news-link">rtk-ai / rtk</a></span><span class="rank-num top">Star: 76835</span><span class="time-info">Fork: 4829</span><span class="count-info">Today stars: 140</span>
+                        </div>
+                        <div class="news-title">CLI proxy that reduces LLM token consumption by 60-90% on common dev commands. Single Rust binary, zero dependencies
+                        </div>
+                    </div>
+                </div>
+                <div class="news-item ">
+                    <div class="news-number">8</div>
+                    <div class="news-content">
+                        <div class="news-header">
+                            <span class="source-name"><a href="https://github.com/Zackriya-Solutions/meetily" target="_blank" class="news-link">Zackriya-Solutions / meetily</a></span><span class="rank-num top">Star: 29655</span><span class="time-info">Fork: 3167</span><span class="count-info">Today stars: 101</span>
+                        </div>
+                        <div class="news-title">Privacy first, AI meeting assistant with 4x faster Parakeet/Whisper live transcription, speaker diarization, and Ollama summarization built on Rust. 100% local processing. no cloud required. Meetily (Meetly Ai - https://meetily.ai) is the #1 Self-hosted, Open-source Ai meeting note taker for macOS &amp; Windows. Understand How to write meeting minutes
+                        </div>
+                    </div>
+                </div>
+                <div class="news-item new">
+                    <div class="news-number">9</div>
+                    <div class="news-content">
+                        <div class="news-header">
+                            <span class="source-name"><a href="https://github.com/aaif-goose/goose" target="_blank" class="news-link">aaif-goose / goose</a></span><span class="rank-num top">Star: 53075</span><span class="time-info">Fork: 6053</span><span class="count-info">Today stars: 60</span>
+                        </div>
+                        <div class="news-title">an open source, extensible AI agent that goes beyond code suggestions - install, execute, edit, and test with any LLM
+                        </div>
+                    </div>
+                </div>
+                <div class="news-item new">
+                    <div class="news-number">10</div>
+                    <div class="news-content">
+                        <div class="news-header">
+                            <span class="source-name"><a href="https://github.com/quickwit-oss/tantivy" target="_blank" class="news-link">quickwit-oss / tantivy</a></span><span class="rank-num top">Star: 15941</span><span class="time-info">Fork: 976</span><span class="count-info">Today stars: 59</span>
+                        </div>
+                        <div class="news-title">Tantivy is a full-text search engine library inspired by Apache Lucene and written in Rust
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="word-group">
+                <div class="word-header">
+                    <div class="word-info">
+                        <div class="word-name">Go</div>
+                        <div class="word-count hot">10 条</div>
+                    </div>
+                    <div class="word-index">6/6</div>
+                </div>
+                <div class="news-item ">
+                    <div class="news-number">1</div>
+                    <div class="news-content">
+                        <div class="news-header">
+                            <span class="source-name"><a href="https://github.com/JuliusBrussee/caveman" target="_blank" class="news-link">JuliusBrussee / caveman</a></span><span class="rank-num top">Star: 99674</span><span class="time-info">Fork: 5771</span><span class="count-info">Today stars: 258</span>
+                        </div>
+                        <div class="news-title">🪨 why use many token when few token do trick — Claude Code skill that cuts 65% of tokens by talking like caveman
+                        </div>
+                    </div>
+                </div>
+                <div class="news-item new">
+                    <div class="news-number">2</div>
+                    <div class="news-content">
+                        <div class="news-header">
+                            <span class="source-name"><a href="https://github.com/avelino/awesome-go" target="_blank" class="news-link">avelino / awesome-go</a></span><span class="rank-num top">Star: 181731</span><span class="time-info">Fork: 13504</span><span class="count-info">Today stars: 155</span>
+                        </div>
+                        <div class="news-title">A curated list of awesome Go frameworks, libraries and software
+                        </div>
+                    </div>
+                </div>
+                <div class="news-item ">
+                    <div class="news-number">3</div>
+                    <div class="news-content">
+                        <div class="news-header">
+                            <span class="source-name"><a href="https://github.com/Wei-Shaw/sub2api" target="_blank" class="news-link">Wei-Shaw / sub2api</a></span><span class="rank-num top">Star: 37840</span><span class="time-info">Fork: 7822</span><span class="count-info">Today stars: 153</span>
+                        </div>
+                        <div class="news-title">Sub2API 一站式开源中转服务，让 Claude、Openai 、Gemini、Grok订阅统一接入，支持拼车共享，更高效分摊成本，原生工具无缝使用。
+                        </div>
+                    </div>
+                </div>
+                <div class="news-item ">
+                    <div class="news-number">4</div>
+                    <div class="news-content">
+                        <div class="news-header">
+                            <span class="source-name"><a href="https://github.com/zzet/gortex" target="_blank" class="news-link">zzet / gortex</a></span><span class="rank-num ">Star: 1388</span><span class="time-info">Fork: 127</span><span class="count-info">Today stars: 144</span>
+                        </div>
+                        <div class="news-title">High-performance code-intelligence engine for AI agents and IDE, supports 257 languages, multi repositories, based on graph, with access via CLI, MCP Server, and API. AI coding agents teammate - expose only needed information, cutting token usage up to 50x. 100% local. Discord: https://discord.gg/39MFHu3J5d
+                        </div>
+                    </div>
+                </div>
+                <div class="news-item ">
+                    <div class="news-number">5</div>
+                    <div class="news-content">
+                        <div class="news-header">
+                            <span class="source-name"><a href="https://github.com/QuantumNous/new-api" target="_blank" class="news-link">QuantumNous / new-api</a></span><span class="rank-num top">Star: 45759</span><span class="time-info">Fork: 10851</span><span class="count-info">Today stars: 132</span>
+                        </div>
+                        <div class="news-title">A unified AI model hub for aggregation &amp; distribution. It supports cross-converting various LLMs into OpenAI-compatible, Claude-compatible, or Gemini-compatible formats. A centralized gateway for personal and enterprise model management. 🍥
+                        </div>
+                    </div>
+                </div>
+                <div class="news-item new">
+                    <div class="news-number">6</div>
+                    <div class="news-content">
+                        <div class="news-header">
+                            <span class="source-name"><a href="https://github.com/alibaba/open-code-review" target="_blank" class="news-link">alibaba / open-code-review</a></span><span class="rank-num top">Star: 20979</span><span class="time-info">Fork: 1510</span><span class="count-info">Today stars: 124</span>
+                        </div>
+                        <div class="news-title">Fast, efficient, battle-tested at Alibaba&#x27;s scale. Hybrid architecture code review tool: deterministic pipelines + LLM Agent, precise line-level comments, built-in multi-language ruleset (NPE, thread-safety, XSS, SQL injection), OpenAI &amp; Anthropic compatible.
+                        </div>
+                    </div>
+                </div>
+                <div class="news-item ">
+                    <div class="news-number">7</div>
+                    <div class="news-content">
+                        <div class="news-header">
+                            <span class="source-name"><a href="https://github.com/google/sam" target="_blank" class="news-link">google / sam</a></span><span class="rank-num ">Star: 350</span><span class="time-info">Fork: 39</span><span class="count-info">Today stars: 61</span>
+                        </div>
+                        <div class="news-title">SAM Sovereign Agent Mesh
+                        </div>
+                    </div>
+                </div>
+                <div class="news-item new">
+                    <div class="news-number">8</div>
+                    <div class="news-content">
+                        <div class="news-header">
+                            <span class="source-name"><a href="https://github.com/Gentleman-Programming/gentle-ai" target="_blank" class="news-link">Gentleman-Programming / gentle-ai</a></span><span class="rank-num ">Star: 5839</span><span class="time-info">Fork: 682</span><span class="count-info">Today stars: 30</span>
+                        </div>
+                        <div class="news-title">
+                        </div>
+                    </div>
+                </div>
+                <div class="news-item new">
+                    <div class="news-number">9</div>
+                    <div class="news-content">
+                        <div class="news-header">
+                            <span class="source-name"><a href="https://github.com/autonomous-ai/autonomous-os" target="_blank" class="news-link">autonomous-ai / autonomous-os</a></span><span class="rank-num ">Star: 142</span><span class="time-info">Fork: 17</span><span class="count-info">Today stars: 29</span>
+                        </div>
+                        <div class="news-title">The open-source operating system for robots — install it and your robot comes alive
+                        </div>
+                    </div>
+                </div>
+                <div class="news-item ">
+                    <div class="news-number">10</div>
+                    <div class="news-content">
+                        <div class="news-header">
+                            <span class="source-name"><a href="https://github.com/shadow1ng/fscan" target="_blank" class="news-link">shadow1ng / fscan</a></span><span class="rank-num top">Star: 14412</span><span class="time-info">Fork: 1937</span><span class="count-info">Today stars: 23</span>
+                        </div>
+                        <div class="news-title">一款内网综合扫描工具，方便一键自动化、全方位漏扫扫描。(An intranet comprehensive scanning tool, enabling one-click automated, all-round vulnerability scanning)
+                        </div>
+                    </div>
+                </div>
+            </div>
+            </div>
+
+            <div class="footer">
+                <div class="footer-content">
+                    由 <span class="project-name">TrendRadar</span> 生成 · 
+                    <a href="https://github.com/sansan0/TrendRadar" target="_blank" class="footer-link">
+                        GitHub 开源项目
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <script>
+            async function saveAsImage() {
+                const button = event.target;
+                const originalText = button.textContent;
+
+                try {
+                    button.textContent = '生成中...';
+                    button.disabled = true;
+                    window.scrollTo(0, 0);
+
+                    // 等待页面稳定
+                    await new Promise(resolve => setTimeout(resolve, 200));
+
+                    // 截图前隐藏按钮
+                    const buttons = document.querySelector('.save-buttons');
+                    buttons.style.visibility = 'hidden';
+
+                    // 再次等待确保按钮完全隐藏
+                    await new Promise(resolve => setTimeout(resolve, 100));
+
+                    const container = document.querySelector('.container');
+
+                    const canvas = await html2canvas(container, {
+                        backgroundColor: '#ffffff',
+                        scale: 1.5,
+                        useCORS: true,
+                        allowTaint: false,
+                        imageTimeout: 10000,
+                        removeContainer: false,
+                        foreignObjectRendering: false,
+                        logging: false,
+                        width: container.offsetWidth,
+                        height: container.offsetHeight,
+                        x: 0,
+                        y: 0,
+                        scrollX: 0,
+                        scrollY: 0,
+                        windowWidth: window.innerWidth,
+                        windowHeight: window.innerHeight
+                    });
+
+                    buttons.style.visibility = 'visible';
+
+                    const link = document.createElement('a');
+                    const now = new Date();
+                    const filename = `TrendRadar_热点新闻分析_${now.getFullYear()}${String(now.getMonth() + 1).padStart(2, '0')}${String(now.getDate()).padStart(2, '0')}_${String(now.getHours()).padStart(2, '0')}${String(now.getMinutes()).padStart(2, '0')}.png`;
+
+                    link.download = filename;
+                    link.href = canvas.toDataURL('image/png', 1.0);
+
+                    // 触发下载
+                    document.body.appendChild(link);
+                    link.click();
+                    document.body.removeChild(link);
+
+                    button.textContent = '保存成功!';
+                    setTimeout(() => {
+                        button.textContent = originalText;
+                        button.disabled = false;
+                    }, 2000);
+
+                } catch (error) {
+                    const buttons = document.querySelector('.save-buttons');
+                    buttons.style.visibility = 'visible';
+                    button.textContent = '保存失败';
+                    setTimeout(() => {
+                        button.textContent = originalText;
+                        button.disabled = false;
+                    }, 2000);
+                }
+            }
+
+            async function saveAsMultipleImages() {
+                const button = event.target;
+                const originalText = button.textContent;
+                const container = document.querySelector('.container');
+                const scale = 1.5; 
+                const maxHeight = 5000 / scale;
+
+                try {
+                    button.textContent = '分析中...';
+                    button.disabled = true;
+
+                    // 获取所有可能的分割元素
+                    const newsItems = Array.from(container.querySelectorAll('.news-item'));
+                    const wordGroups = Array.from(container.querySelectorAll('.word-group'));
+                    const newSection = container.querySelector('.new-section');
+                    const errorSection = container.querySelector('.error-section');
+                    const header = container.querySelector('.header');
+                    const footer = container.querySelector('.footer');
+
+                    // 计算元素位置和高度
+                    const containerRect = container.getBoundingClientRect();
+                    const elements = [];
+
+                    // 添加header作为必须包含的元素
+                    elements.push({
+                        type: 'header',
+                        element: header,
+                        top: 0,
+                        bottom: header.offsetHeight,
+                        height: header.offsetHeight
+                    });
+
+                    // 添加错误信息（如果存在）
+                    if (errorSection) {
+                        const rect = errorSection.getBoundingClientRect();
+                        elements.push({
+                            type: 'error',
+                            element: errorSection,
+                            top: rect.top - containerRect.top,
+                            bottom: rect.bottom - containerRect.top,
+                            height: rect.height
+                        });
+                    }
+
+                    // 按word-group分组处理news-item
+                    wordGroups.forEach(group => {
+                        const groupRect = group.getBoundingClientRect();
+                        const groupNewsItems = group.querySelectorAll('.news-item');
+
+                        // 添加word-group的header部分
+                        const wordHeader = group.querySelector('.word-header');
+                        if (wordHeader) {
+                            const headerRect = wordHeader.getBoundingClientRect();
+                            elements.push({
+                                type: 'word-header',
+                                element: wordHeader,
+                                parent: group,
+                                top: groupRect.top - containerRect.top,
+                                bottom: headerRect.bottom - containerRect.top,
+                                height: headerRect.height
+                            });
+                        }
+
+                        // 添加每个news-item
+                        groupNewsItems.forEach(item => {
+                            const rect = item.getBoundingClientRect();
+                            elements.push({
+                                type: 'news-item',
+                                element: item,
+                                parent: group,
+                                top: rect.top - containerRect.top,
+                                bottom: rect.bottom - containerRect.top,
+                                height: rect.height
+                            });
+                        });
+                    });
+
+                    // 添加新增新闻部分
+                    if (newSection) {
+                        const rect = newSection.getBoundingClientRect();
+                        elements.push({
+                            type: 'new-section',
+                            element: newSection,
+                            top: rect.top - containerRect.top,
+                            bottom: rect.bottom - containerRect.top,
+                            height: rect.height
+                        });
+                    }
+
+                    // 添加footer
+                    const footerRect = footer.getBoundingClientRect();
+                    elements.push({
+                        type: 'footer',
+                        element: footer,
+                        top: footerRect.top - containerRect.top,
+                        bottom: footerRect.bottom - containerRect.top,
+                        height: footer.offsetHeight
+                    });
+
+                    // 计算分割点
+                    const segments = [];
+                    let currentSegment = { start: 0, end: 0, height: 0, includeHeader: true };
+                    let headerHeight = header.offsetHeight;
+                    currentSegment.height = headerHeight;
+
+                    for (let i = 1; i < elements.length; i++) {
+                        const element = elements[i];
+                        const potentialHeight = element.bottom - currentSegment.start;
+
+                        // 检查是否需要创建新分段
+                        if (potentialHeight > maxHeight && currentSegment.height > headerHeight) {
+                            // 在前一个元素结束处分割
+                            currentSegment.end = elements[i - 1].bottom;
+                            segments.push(currentSegment);
+
+                            // 开始新分段
+                            currentSegment = {
+                                start: currentSegment.end,
+                                end: 0,
+                                height: element.bottom - currentSegment.end,
+                                includeHeader: false
+                            };
+                        } else {
+                            currentSegment.height = potentialHeight;
+                            currentSegment.end = element.bottom;
+                        }
+                    }
+
+                    // 添加最后一个分段
+                    if (currentSegment.height > 0) {
+                        currentSegment.end = container.offsetHeight;
+                        segments.push(currentSegment);
+                    }
+
+                    button.textContent = `生成中 (0/${segments.length})...`;
+
+                    // 隐藏保存按钮
+                    const buttons = document.querySelector('.save-buttons');
+                    buttons.style.visibility = 'hidden';
+
+                    // 为每个分段生成图片
+                    const images = [];
+                    for (let i = 0; i < segments.length; i++) {
+                        const segment = segments[i];
+                        button.textContent = `生成中 (${i + 1}/${segments.length})...`;
+
+                        // 创建临时容器用于截图
+                        const tempContainer = document.createElement('div');
+                        tempContainer.style.cssText = `
+                            position: absolute;
+                            left: -9999px;
+                            top: 0;
+                            width: ${container.offsetWidth}px;
+                            background: white;
+                        `;
+                        tempContainer.className = 'container';
+
+                        // 克隆容器内容
+                        const clonedContainer = container.cloneNode(true);
+
+                        // 移除克隆内容中的保存按钮
+                        const clonedButtons = clonedContainer.querySelector('.save-buttons');
+                        if (clonedButtons) {
+                            clonedButtons.style.display = 'none';
+                        }
+
+                        tempContainer.appendChild(clonedContainer);
+                        document.body.appendChild(tempContainer);
+
+                        // 等待DOM更新
+                        await new Promise(resolve => setTimeout(resolve, 100));
+
+                        // 使用html2canvas截取特定区域
+                        const canvas = await html2canvas(clonedContainer, {
+                            backgroundColor: '#ffffff',
+                            scale: scale,
+                            useCORS: true,
+                            allowTaint: false,
+                            imageTimeout: 10000,
+                            logging: false,
+                            width: container.offsetWidth,
+                            height: segment.end - segment.start,
+                            x: 0,
+                            y: segment.start,
+                            windowWidth: window.innerWidth,
+                            windowHeight: window.innerHeight
+                        });
+
+                        images.push(canvas.toDataURL('image/png', 1.0));
+
+                        // 清理临时容器
+                        document.body.removeChild(tempContainer);
+                    }
+
+                    // 恢复按钮显示
+                    buttons.style.visibility = 'visible';
+
+                    // 下载所有图片
+                    const now = new Date();
+                    const baseFilename = `TrendRadar_热点新闻分析_${now.getFullYear()}${String(now.getMonth() + 1).padStart(2, '0')}${String(now.getDate()).padStart(2, '0')}_${String(now.getHours()).padStart(2, '0')}${String(now.getMinutes()).padStart(2, '0')}`;
+
+                    for (let i = 0; i < images.length; i++) {
+                        const link = document.createElement('a');
+                        link.download = `${baseFilename}_part${i + 1}.png`;
+                        link.href = images[i];
+                        document.body.appendChild(link);
+                        link.click();
+                        document.body.removeChild(link);
+
+                        // 延迟一下避免浏览器阻止多个下载
+                        await new Promise(resolve => setTimeout(resolve, 100));
+                    }
+
+                    button.textContent = `已保存 ${segments.length} 张图片!`;
+                    setTimeout(() => {
+                        button.textContent = originalText;
+                        button.disabled = false;
+                    }, 2000);
+
+                } catch (error) {
+                    console.error('分段保存失败:', error);
+                    const buttons = document.querySelector('.save-buttons');
+                    buttons.style.visibility = 'visible';
+                    button.textContent = '保存失败';
+                    setTimeout(() => {
+                        button.textContent = originalText;
+                        button.disabled = false;
+                    }, 2000);
+                }
+            }
+
+            document.addEventListener('DOMContentLoaded', function() {
+                window.scrollTo(0, 0);
+            });
+        </script>
+    </body>
+    </html>
+    
